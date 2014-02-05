@@ -5,7 +5,7 @@ Plugin URI: http://blogvault.net/
 Description: Easiest way to backup your blog
 Author: akshat
 Author URI: http://blogvault.net/
-Version: 1.02
+Version: 1.04
  */
 
 /*  Copyright YEAR  PLUGIN_AUTHOR_NAME  (email : PLUGIN AUTHOR EMAIL)
@@ -26,54 +26,48 @@ Version: 1.02
 
 /* Global response array */
 global $bvVersion;
-global $bvRespArray;
-$bvRespArray = array("blogvault" => "response");
-$bvVersion = '1.02';
+global $blogvault;
+global $bvDynamicEvents;
+$bvVersion = '1.04';
 
 if (is_admin())
 	require_once dirname( __FILE__ ) . '/admin.php';
 
-register_activation_hook(__FILE__, 'bvActivateHandler');
-register_deactivation_hook(__FILE__, 'bvDeactivateHandler');
 
-function bvActivateHandler() {
-	##BVKEYSLOCATE##
-	if (get_option('bvPublic')) {
-		update_option('bvLastSendTime', time());
-		update_option('bvLastRecvTime', 0);
-		bvActivateServer();
+if ( !function_exists('bvActivateHandler') ) :
+	function bvActivateHandler() {
+		global $blogvault;
+		##BVKEYSLOCATE##
+		if ($blogvault->getOption('bvPublic')) {
+			$blogvault->updateOption('bvLastSendTime', time());
+			$blogvault->updateOption('bvLastRecvTime', 0);
+			$blogvault->activate();
+		}
 	}
-}
+	register_activation_hook(__FILE__, 'bvActivateHandler');
+endif;
 
-function bvDeactivateHandler() {
-	$body = array();
-	$body['wpurl'] = urlencode(get_bloginfo("wpurl"));
-	$clt = new bvHttpClient();
-	if (strlen($clt->errormsg) > 0) {
-		return false;
+if ( !function_exists('bvDeactivateHandler') ) :
+	function bvDeactivateHandler() {
+		global $blogvault;
+		$body = array();
+		$body['wpurl'] = urlencode(get_bloginfo("wpurl"));
+		$clt = new BVHttpClient();
+		if (strlen($clt->errormsg) > 0) {
+			return false;
+		}
+		$resp = $clt->post($blogvault->getUrl("deactivate"), array(), $body);
+		if (array_key_exists('status', $resp) && ($resp['status'] != '200')) {
+			return false;
+		}
+		return true;
 	}
-	$resp = $clt->post(bvGetUrl("deactivate"), array(), $body);
-	if (array_key_exists('status', $resp) && ($resp['status'] != '200')) {
-		return false;
-	}
-	return true;
-}
+	register_deactivation_hook(__FILE__, 'bvDeactivateHandler');
+endif;
 
-function bvStatusAdd($key, $value) {
-	global $bvRespArray;
-	$bvRespArray[$key] = $value;
-}
-
-function bvStatusAddArray($key, $value) {
-	global $bvRespArray;
-	if (!isset($bvRespArray[$key])) {
-		$bvRespArray[$key] = array();
-	}
-	$bvRespArray[$key][] = $value;
-}
-
-class bvHttpClient {
-	var $user_agent = 'bvHttpClient';
+if (!class_exists('BVHttpClient')) {
+class BVHttpClient {
+	var $user_agent = 'BVHttpClient';
 	var $host;
 	var $port;
 	var $timeout = 20;
@@ -81,7 +75,8 @@ class bvHttpClient {
 	var $conn;
 	var $mode;
 
-	function bvHttpClient() {
+	function BVHttpClient() {
+		global $blogvault;
 		$sno = "";
 		if (array_key_exists('svrno', $_REQUEST)) {
 			$sno = intval($_REQUEST['svrno']);
@@ -91,12 +86,12 @@ class bvHttpClient {
 				$this->mode = "req";
 			}
 			if ($this->mode === "resp") {
-				bvStatusAdd("mode", "resp");
+				$blogvault->addStatus("mode", "resp");
 				return;
 			}
 		} else {
 			$this->timeout = 5;
-			$sno = bvGet_option('bvServerId');
+			$sno = $blogvault->getOption('bvServerId');
 			if (empty($sno)) {
 				$sno = "1";
 			}
@@ -108,8 +103,8 @@ class bvHttpClient {
 			$this->host = $_REQUEST['ssl']."://".$host;
 		}
 		if (!$this->conn = @fsockopen($this->host, $this->port, $errno, $errstr, $this->timeout)) {
-			$this->errormsg = "Cannot Open Connection tp Host";
-			bvStatusAdd("httperror", "Cannot Open Connection to Host");
+			$this->errormsg = "Cannot Open Connection to Host";
+			$blogvault->addStatus("httperror", "Cannot Open Connection to Host");
 			return;
 		}
 		socket_set_timeout($this->conn, $this->timeout);
@@ -219,6 +214,7 @@ class bvHttpClient {
 	}
 
 	function getResponse() {
+		global $blogvault;
 		$response = array();
 		$response['headers'] = array();
 		$state = 1;
@@ -238,8 +234,8 @@ class bvHttpClient {
 				$response['status'] = $m[2];
 				$response['status_string'] = $m[3];
 				$state = 2;
-				bvStatusAdd("respstatus", $response['status']);
-				bvStatusAdd("respstatus_string", $response['status_string']);
+				$blogvault->addStatus("respstatus", $response['status']);
+				$blogvault->addStatus("respstatus_string", $response['status_string']);
 			} else if (2 == $state) {
 				# End of headers
 				if (2 == strlen($line)) {
@@ -262,448 +258,488 @@ class bvHttpClient {
 		return $response;
 	}
 }
+} // Class exists
 
-function bvGetUrl($method) {
-	global $bvVersion;
-	$baseurl = "/bvapi/";
-	$time = time();
-	if ($time < bvGet_option('bvLastSendTime')) {
-		$time = bvGet_option('bvLastSendTime') + 1;
-	}
-	bvUpdate_option('bvLastSendTime', $time);
-	$public = urlencode(bvGet_option('bvPublic'));
-	$secret = urlencode(bvGet_option('bvSecretKey'));
-	$time = urlencode($time);
-	$version = urlencode($bvVersion);
-	$sig = md5($public.$secret.$time.$version);
-	return $baseurl.$method."?sig=".$sig."&bvTime=".$time."&bvPublic=".$public."&bvVersion=".$version;
-}
 
-function bvScanFiles($initdir = "./", $offset = 0, $limit = 0, $bsize = 512) {
-	$i = 0;
-	$j = 0;
-	$dirs = array();
-	$dirs[] = $initdir;
-	$j++;
-	$bfc = 0;
-	$bfa = array();
-	$current = 0;
-	$recurse = true;
-	if (array_key_exists('recurse', $_REQUEST) && $_REQUEST["recurse"] == "false") {
-		$recurse = false;
-	}
-	$clt = new bvHttpClient();
-	if (strlen($clt->errormsg) > 0) {
-		return false;
-	}
-	$clt->uploadChunkedFile(bvGetUrl("listfiles")."&recurse=".$_REQUEST["recurse"]."&offset=".$offset."&initdir=".urlencode($initdir), "fileslist", "allfiles");
-	while ($i < $j) {
-		$dir = $dirs[$i];
-		$d = @opendir(ABSPATH.$dir);
-		if ($d) {
-			while (($file = readdir($d)) !== false) {
-				if ($file == '.' || $file == '..') { continue; }
-				$relfile = $dir.$file;
-				$absfile = ABSPATH.$relfile;
-				if (is_dir($absfile)) {
-					if (is_link($absfile)) { continue; }
-					$dirs[] = $relfile."/";
-					$j++;
-				}
-				$stats = @stat($absfile);
-				$fdata = array();
-				if (!$stats)
-					continue;
-				$current++;
-				if ($offset >= $current)
-					continue;
-				if (($limit != 0) && (($current - $offset) > $limit)) {
-					$i = $j;
-					break;
-				}
-				foreach(preg_grep('#size|uid|gid|mode|mtime#i', array_keys($stats)) as $key ) {
-					$fdata[$key] = $stats[$key];
-				}
+if (!class_exists('BlogVault')) {
+class BlogVault {
 
-				$fdata["filename"] = $relfile;
-				if (($fdata["mode"] & 0xF000) == 0xA000) {
-					$fdata["link"] = @readlink($absfile);
-				}
-				$bfa[] = $fdata;
-				$bfc++;
-				if ($bfc == 512) {
-					$str = serialize($bfa);
-					$clt->newChunkedPart(strlen($str).":".$str);
-					$bfc = 0;
-					$bfa = array();
-				}
-			}
-			closedir($d);
-		}
-		$i++;
-		if ($recurse == false)
-			break;
-	}
-	if ($bfc != 0) {
-		$str = serialize($bfa);
-		$clt->newChunkedPart(strlen($str).":".$str);
-	}
-	$clt->closeChunkedPart();
-	$resp = $clt->getResponse();
-	if (array_key_exists('status', $resp) && ($resp['status'] != '200')) {
-		return false;
-	}
-	return true;
-}
+	private static $instance = NULL; 
+	public $status;
 
-function bvGetValidFiles($files)
-{
-	$outfiles = array();
-	foreach($files as $file) {
-		if (!file_exists($file) || !is_readable($file) ||
-		    (!is_file($file) && !is_link($file))) {
-			bvStatusAddArray("missingfiles", $file);
-			continue;
-		}
-		$outfiles[] = $file;
-	}
-	return $outfiles;
-}
-
-function bvFileStat($file) {
-	$stats = @stat(ABSPATH.$file);
-	$fdata = array();
-	foreach(preg_grep('#size|uid|gid|mode|mtime#i', array_keys($stats)) as $key ) {
-		$fdata[$key] = $stats[$key];
+	static public function getInstance() {
+		if (self::$instance === NULL)
+			self::$instance = new BlogVault();
+		return self::$instance;
 	}
 
-	$fdata["filename"] = $file;
-	return $fdata;
-}
+	function BlogVault() {
+		$this->status = array("blogvault" => "response");
+	}
 
-function bvFileMD5($files, $offset = 0, $limit = 0, $bsize = 102400) {
-	$clt = new bvHttpClient();
-	if (strlen($clt->errormsg) > 0) {
-		return false;
-	}
-	$clt->uploadChunkedFile(bvGetUrl("filesmd5")."&offset=".$offset, "filemd5", "list");
-	$files = bvGetValidFiles($files);
-	foreach($files as $file) {
-		$fdata = array();
-		$fdata = bvFileStat($file);
-		$_limit = $limit;
-		$_bsize = $bsize;
-		if (!file_exists(ABSPATH.$file)) {
-			bvStatusAddArray("missingfiles", $file);
-			continue;
-		}
-		if ($offset == 0 && $_limit == 0) {
-			$md5 = md5_file(ABSPATH.$file);
-		} else {
-			if ($_limit == 0)
-				$_limit = $fdata["size"];
-			if ($offset + $_limit < $fdata["size"])
-				$_limit = $fdata["size"] - $offset;
-			$handle = fopen(ABSPATH.$file, "rb");
-			$ctx = hash_init('md5');
-			fseek($handle, $offset, SEEK_SET);
-			$dlen = 1;
-			while (($_limit > 0) && ($dlen > 0)) {
-				if ($_bsize > $_limit)
-					$_bsize = $_limit;
-				$d = fread($handle, $_bsize);
-				$dlen = strlen($d);
-				hash_update($ctx, $d);
-				$_limit -= $dlen;
-			}
-			fclose($handle);
-			$md5 = hash_final($ctx);
-		}
-		$fdata["md5"] = $md5;
-		$sfdata = serialize($fdata);
-		$clt->newChunkedPart(strlen($sfdata).":".$sfdata);
-	}
-	$clt->closeChunkedPart();
-	$resp = $clt->getResponse();
-	if (array_key_exists('status', $resp) && ($resp['status'] != '200')) {
-		return false;
+	function addStatus($key, $value) {
+		$this->status[$key] = $value;
 	}
 	
-	return true;
-}
-
-function bvUploadFiles($files, $offset = 0, $limit = 0, $bsize = 102400) {
-	$clt = new bvHttpClient();
-	if (strlen($clt->errormsg) > 0) {
-		return false;
-	}
-	$clt->uploadChunkedFile(bvGetUrl("filedump")."&offset=".$offset, "filedump", "data");
-
-	foreach($files as $file) {
-		if (!file_exists(ABSPATH.$file)) {
-			bvStatusAddArray("missingfiles", $file);
-			continue;
+	function addArrayToStatus($key, $value) {
+		if (!isset($this->status[$key])) {
+			$this->status[$key] = array();
 		}
-		$handle = fopen(ABSPATH.$file, "rb");
-		if (($handle != null) && is_resource($handle)) {
-			$fdata = bvFileStat($file);
-			$sfdata = serialize($fdata);
+		$this->status[$key][] = $value;
+	}
+
+	function terminate() {
+		die("bvbvbvbvbv".serialize($this->status)."bvbvbvbvbv");
+		exit;
+	}
+
+	function getUrl($method) {
+		global $bvVersion;
+		$baseurl = "/bvapi/";
+		$time = time();
+		if ($time < $this->getOption('bvLastSendTime')) {
+			$time = $this->getOption('bvLastSendTime') + 1;
+		}
+		$this->updateOption('bvLastSendTime', $time);
+		$public = urlencode($this->getOption('bvPublic'));
+		$secret = urlencode($this->getOption('bvSecretKey'));
+		$time = urlencode($time);
+		$version = urlencode($bvVersion);
+		$sig = md5($public.$secret.$time.$version);
+		return $baseurl.$method."?sig=".$sig."&bvTime=".$time."&bvPublic=".$public."&bvVersion=".$version;
+	}
+
+	function scanFiles($initdir = "./", $offset = 0, $limit = 0, $bsize = 512) {
+		$i = 0;
+		$j = 0;
+		$dirs = array();
+		$dirs[] = $initdir;
+		$j++;
+		$bfc = 0;
+		$bfa = array();
+		$current = 0;
+		$recurse = true;
+		if (array_key_exists('recurse', $_REQUEST) && $_REQUEST["recurse"] == "false") {
+			$recurse = false;
+		}
+		$clt = new BVHttpClient();
+		if (strlen($clt->errormsg) > 0) {
+			return false;
+		}
+		$clt->uploadChunkedFile($this->getUrl("listfiles")."&recurse=".$_REQUEST["recurse"]."&offset=".$offset."&initdir=".urlencode($initdir), "fileslist", "allfiles");
+		while ($i < $j) {
+			$dir = $dirs[$i];
+			$d = @opendir(ABSPATH.$dir);
+			if ($d) {
+				while (($file = readdir($d)) !== false) {
+					if ($file == '.' || $file == '..') { continue; }
+						$relfile = $dir.$file;
+					$absfile = ABSPATH.$relfile;
+					if (is_dir($absfile)) {
+						if (is_link($absfile)) { continue; }
+							$dirs[] = $relfile."/";
+						$j++;
+					}
+					$stats = @stat($absfile);
+					$fdata = array();
+					if (!$stats)
+						continue;
+					$current++;
+					if ($offset >= $current)
+						continue;
+					if (($limit != 0) && (($current - $offset) > $limit)) {
+						$i = $j;
+						break;
+					}
+					foreach(preg_grep('#size|uid|gid|mode|mtime#i', array_keys($stats)) as $key ) {
+						$fdata[$key] = $stats[$key];
+					}
+
+					$fdata["filename"] = $relfile;
+					if (($fdata["mode"] & 0xF000) == 0xA000) {
+						$fdata["link"] = @readlink($absfile);
+					}
+					$bfa[] = $fdata;
+					$bfc++;
+					if ($bfc == 512) {
+						$str = serialize($bfa);
+						$clt->newChunkedPart(strlen($str).":".$str);
+						$bfc = 0;
+						$bfa = array();
+					}
+				}
+				closedir($d);
+			}
+			$i++;
+			if ($recurse == false)
+				break;
+		}
+		if ($bfc != 0) {
+			$str = serialize($bfa);
+			$clt->newChunkedPart(strlen($str).":".$str);
+		}
+		$clt->closeChunkedPart();
+		$resp = $clt->getResponse();
+		if (array_key_exists('status', $resp) && ($resp['status'] != '200')) {
+			return false;
+		}
+		return true;
+	}
+
+	function getValidFiles($files)
+	{
+		$outfiles = array();
+		foreach($files as $file) {
+			if (!file_exists($file) || !is_readable($file) ||
+				(!is_file($file) && !is_link($file))) {
+					$this->addArrayToStatus("missingfiles", $file);
+					continue;
+				}
+			$outfiles[] = $file;
+		}
+		return $outfiles;
+	}
+
+	function fileStat($file) {
+		$stats = @stat(ABSPATH.$file);
+		$fdata = array();
+		foreach(preg_grep('#size|uid|gid|mode|mtime#i', array_keys($stats)) as $key ) {
+			$fdata[$key] = $stats[$key];
+		}
+
+		$fdata["filename"] = $file;
+		return $fdata;
+	}
+
+	function fileMd5($files, $offset = 0, $limit = 0, $bsize = 102400) {
+		$clt = new BVHttpClient();
+		if (strlen($clt->errormsg) > 0) {
+			return false;
+		}
+		$clt->uploadChunkedFile($this->getUrl("filesmd5")."&offset=".$offset, "filemd5", "list");
+		$files = $this->getValidFiles($files);
+		foreach($files as $file) {
+			$fdata = array();
+			$fdata = $this->fileStat($file);
 			$_limit = $limit;
 			$_bsize = $bsize;
-			if ($_limit == 0)
-				$_limit = $fdata["size"];
-			if ($offset + $_limit > $fdata["size"])
-				$_limit = $fdata["size"] - $offset;
-			$clt->newChunkedPart(strlen($sfdata).":".$sfdata.$_limit.":");
-			fseek($handle, $offset, SEEK_SET);
-			$dlen = 1;
-			while (($_limit > 0) && ($dlen > 0)) {
-				if ($_bsize > $_limit)
-					$_bsize = $_limit;
-				$d = fread($handle, $_bsize);
-				$dlen = strlen($d);
-				$clt->newChunkedPart($d);
-				$_limit -= $dlen;
+			if (!file_exists(ABSPATH.$file)) {
+				$this->addArrayToStatus("missingfiles", $file);
+				continue;
 			}
-			fclose($handle);
+			if ($offset == 0 && $_limit == 0) {
+				$md5 = md5_file(ABSPATH.$file);
+			} else {
+				if ($_limit == 0)
+					$_limit = $fdata["size"];
+				if ($offset + $_limit < $fdata["size"])
+					$_limit = $fdata["size"] - $offset;
+				$handle = fopen(ABSPATH.$file, "rb");
+				$ctx = hash_init('md5');
+				fseek($handle, $offset, SEEK_SET);
+				$dlen = 1;
+				while (($_limit > 0) && ($dlen > 0)) {
+					if ($_bsize > $_limit)
+						$_bsize = $_limit;
+					$d = fread($handle, $_bsize);
+					$dlen = strlen($d);
+					hash_update($ctx, $d);
+					$_limit -= $dlen;
+				}
+				fclose($handle);
+				$md5 = hash_final($ctx);
+			}
+			$fdata["md5"] = $md5;
+			$sfdata = serialize($fdata);
+			$clt->newChunkedPart(strlen($sfdata).":".$sfdata);
+		}
+		$clt->closeChunkedPart();
+		$resp = $clt->getResponse();
+		if (array_key_exists('status', $resp) && ($resp['status'] != '200')) {
+			return false;
+		}
+
+		return true;
+	}
+
+	function uploadFiles($files, $offset = 0, $limit = 0, $bsize = 102400) {
+		$clt = new BVHttpClient();
+		if (strlen($clt->errormsg) > 0) {
+			return false;
+		}
+		$clt->uploadChunkedFile($this->getUrl("filedump")."&offset=".$offset, "filedump", "data");
+
+		foreach($files as $file) {
+			if (!file_exists(ABSPATH.$file)) {
+				$this->addArrayToStatus("missingfiles", $file);
+				continue;
+			}
+			$handle = fopen(ABSPATH.$file, "rb");
+			if (($handle != null) && is_resource($handle)) {
+				$fdata = $this->fileStat($file);
+				$sfdata = serialize($fdata);
+				$_limit = $limit;
+				$_bsize = $bsize;
+				if ($_limit == 0)
+					$_limit = $fdata["size"];
+				if ($offset + $_limit > $fdata["size"])
+					$_limit = $fdata["size"] - $offset;
+				$clt->newChunkedPart(strlen($sfdata).":".$sfdata.$_limit.":");
+				fseek($handle, $offset, SEEK_SET);
+				$dlen = 1;
+				while (($_limit > 0) && ($dlen > 0)) {
+					if ($_bsize > $_limit)
+						$_bsize = $_limit;
+					$d = fread($handle, $_bsize);
+					$dlen = strlen($d);
+					$clt->newChunkedPart($d);
+					$_limit -= $dlen;
+				}
+				fclose($handle);
+			} else {
+				$this->addArrayToStatus("unreadablefiles", $file);
+			}
+		}
+		$clt->closeChunkedPart();
+		$resp = $clt->getResponse();
+		if (array_key_exists('status', $resp) && ($resp['status'] != '200')) {
+			return false;
+		}
+		return true;
+	}
+
+	/* This informs the server about the activation */
+	function activate() {
+		global $wpdb;
+		global $bvVersion;
+		global $blogvault;
+		$body = array();
+		$body['wpurl'] = urlencode(get_bloginfo("wpurl"));
+		$body['abspath'] = urlencode(ABSPATH);
+		if (defined('DB_CHARSET'))
+			$body['dbcharset'] = urlencode(DB_CHARSET);
+		if ($wpdb->base_prefix) {
+			$body['dbprefix'] = urlencode($wpdb->base_prefix);
 		} else {
-			bvStatusAddArray("unreadablefiles", $file);
+			$body['dbprefix'] = urlencode($wpdb->prefix);
+		}
+		$body['bvversion'] = urlencode($bvVersion);
+		$body['serverip'] = urlencode($_SERVER['SERVER_ADDR']);
+		$body['dynsync'] = urlencode($blogvault->getOption('bvDynSyncActive'));
+		if (extension_loaded('openssl')) {
+			$body['openssl'] = "1";
+		}
+		if (function_exists(is_ssl) && is_ssl()) {
+			$body['https'] = "1";
+		}
+		$all_tables = $this->getAllTables();
+		$i = 0;
+		foreach ($all_tables as $table) {
+			$body["all_tables[$i]"] = urlencode($table);
+			$i++;
+		}
+
+		$clt = new BVHttpClient();
+		if (strlen($clt->errormsg) > 0) {
+			return false;
+		}
+		$resp = $clt->post($this->getUrl("activate"), array(), $body);
+		if (array_key_exists('status', $resp) && ($resp['status'] != '200')) {
+			return false;
+		}
+		return true;
+	}
+
+	function listTables() {
+		global $wpdb;
+
+		$clt = new BVHttpClient();
+		if (strlen($clt->errormsg) > 0) {
+			return false;
+		}
+		$clt->uploadChunkedFile($this->getUrl("listtables"), "tableslist", "status");
+		$data["listtables"] = $wpdb->get_results( "SHOW TABLE STATUS", ARRAY_A);
+		$data["tables"] = $wpdb->get_results( "SHOW TABLES", ARRAY_N);
+		$str = serialize($data);
+		$clt->newChunkedPart(strlen($str).":".$str);
+		$clt->closeChunkedPart();
+		$resp = $clt->getResponse();
+		if (array_key_exists('status', $resp) && ($resp['status'] != '200')) {
+			return false;
+		}
+		return true;
+	}
+
+	function tableKeys($table) {
+		global $wpdb, $blogvault;
+		$info = $wpdb->get_results("SHOW KEYS FROM $table;", ARRAY_A);
+		$blogvault->addStatus("table_keys", $info);
+		return true;
+	}
+
+	function describeTable($table) {
+		global $wpdb, $blogvault;
+		$info = $wpdb->get_results("DESCRIBE $table;", ARRAY_A);
+		$blogvault->addStatus("table_description", $info);
+		return true;
+	}
+
+	function checkTable($table, $type) {
+		global $wpdb, $blogvault;
+		$info = $wpdb->get_results("CHECK TABLE $table $type;", ARRAY_A);
+		$blogvault->addStatus("status", $info);
+		return true;
+	}
+
+	function tableInfo($tbl, $offset = 0, $limit = 0, $bsize = 512, $filter = "") {
+		global $wpdb;
+
+		$clt = new BVHttpClient();
+		if (strlen($clt->errormsg) > 0) {
+			return false;
+		}
+		$clt->uploadChunkedFile($this->getUrl("tableinfo")."&offset=".$offset, "tablename", $tbl);
+		$str = "SHOW CREATE TABLE " . $tbl . ";";
+		$create = $wpdb->get_var($str, 1);
+		$rows_count = $wpdb->get_var("SELECT COUNT(*) FROM ".$tbl);
+		$data = array();
+		$data["create"] = $create;
+		$data["count"] = intval($rows_count);
+		$data["encoding"] = mysql_client_encoding();
+		$str = serialize($data);
+		$clt->newChunkedPart(strlen($str).":".$str);
+
+		if ($limit == 0) {
+			$limit = $rows_count;
+		}
+		$srows = 1;
+		while (($limit > 0) && ($srows > 0)) {
+			if ($bsize > $limit)
+				$bsize = $limit;
+			$rows = $wpdb->get_results("SELECT * FROM $tbl $filter LIMIT $bsize OFFSET $offset", ARRAY_A);
+			$srows = sizeof($rows);
+			$data = array();
+			$data["table"] = $tbl;
+			$data["offset"] = $offset;
+			$data["size"] = $srows;
+			$data["md5"] = md5(serialize($rows));
+			$str = serialize($data);
+			$clt->newChunkedPart(strlen($str).":".$str);
+			$offset += $srows;
+			$limit -= $srows;
+		}
+		$clt->closeChunkedPart();
+		$resp = $clt->getResponse();
+		if (array_key_exists('status', $resp) && ($resp['status'] != '200')) {
+			return false;
+		}
+		return true;
+	}
+
+	function uploadRows($tbl, $offset = 0, $limit = 0, $bsize = 512, $filter = "") {
+		global $wpdb;
+		$clt = new BVHttpClient();
+		if (strlen($clt->errormsg) > 0) {
+			return false;
+		}
+		$clt->uploadChunkedFile($this->getUrl("uploadrows")."&offset=".$offset, "tablename", $tbl);
+
+		if ($limit == 0) {
+			$limit = $wpdb->get_var("SELECT COUNT(*) FROM ".$tbl);
+		}
+		$srows = 1;
+		while (($limit > 0) && ($srows > 0)) {
+			if ($bsize > $limit)
+				$bsize = $limit;
+			$rows = $wpdb->get_results("SELECT * FROM $tbl $filter LIMIT $bsize OFFSET $offset", ARRAY_A);
+			$srows = sizeof($rows);
+			$data = array();
+			$data["offset"] = $offset;
+			$data["size"] = $srows;
+			$data["rows"] = $rows;
+			$data["md5"] = md5(serialize($rows));
+			$str = serialize($data);
+			$clt->newChunkedPart(strlen($str).":".$str);
+			$offset += $srows;
+			$limit -= $srows;
+		}
+		$clt->closeChunkedPart();
+		$resp = $clt->getResponse();
+		if (array_key_exists('status', $resp) && ($resp['status'] != '200')) {
+			return false;
+		}
+		return true;
+	}
+
+	function updateKeys($publickey, $secretkey) {
+		$this->updateOption('bvPublic', $publickey);
+		$this->updateOption('bvSecretKey', $secretkey);
+	}
+
+	function updateOption($key, $value) {
+		if ($this->isMultisite()) {
+			update_blog_option(1, $key, $value);
+		} else {
+			update_option($key, $value);
 		}
 	}
-	$clt->closeChunkedPart();
-	$resp = $clt->getResponse();
-	if (array_key_exists('status', $resp) && ($resp['status'] != '200')) {
-		return false;
-	}
-	return true;
-}
 
-/* This informs the server about the activation */
-function bvActivateServer() {
-	global $wpdb;
-	global $bvVersion;
-	$body = array();
-	$body['wpurl'] = urlencode(get_bloginfo("wpurl"));
-	$body['abspath'] = urlencode(ABSPATH);
-	if (defined('DB_CHARSET'))
-		$body['dbcharset'] = urlencode(DB_CHARSET);
-	if ($wpdb->base_prefix) {
-		$body['dbprefix'] = urlencode($wpdb->base_prefix);
-	} else {
-		$body['dbprefix'] = urlencode($wpdb->prefix);
-	}
-	$body['bvversion'] = urlencode($bvVersion);
-	$body['serverip'] = urlencode($_SERVER['SERVER_ADDR']);
-	$body['dynsync'] = urlencode(get_option('bvDynSyncActive'));
-	if (extension_loaded('openssl')) {
-		$body['openssl'] = "1";
-	}
-	if (function_exists(is_ssl) && is_ssl()) {
-		$body['https'] = "1";
-	}
-	$all_tables = bvGetAllTables();
-	$i = 0;
-	foreach ($all_tables as $table) {
-		$body["all_tables[$i]"] = urlencode($table);
-		$i++;
+	function getOption($key) {
+		if ($this->isMultisite()) {
+			return get_blog_option(1, $key);
+		} else {
+			return get_option($key);
+		}
 	}
 
-	$clt = new bvHttpClient();
-	if (strlen($clt->errormsg) > 0) {
-		return false;
+	function getAllTables() {
+		global $wpdb;
+		$all_tables = $wpdb->get_results("SHOW TABLES", ARRAY_N);
+		$all_tables = array_map(create_function('$a', 'return $a[0];'), $all_tables);
+		return $all_tables;
 	}
-	$resp = $clt->post(bvGetUrl("activate"), array(), $body);
-	if (array_key_exists('status', $resp) && ($resp['status'] != '200')) {
-		return false;
-	}
-	return true;
-}
-
-function bvListTables() {
-	global $wpdb;
-
-	$clt = new bvHttpClient();
-	if (strlen($clt->errormsg) > 0) {
-		return false;
-	}
-	$clt->uploadChunkedFile(bvGetUrl("listtables"), "tableslist", "status");
-	$data["listtables"] = $wpdb->get_results( "SHOW TABLE STATUS", ARRAY_A);
-	$data["tables"] = $wpdb->get_results( "SHOW TABLES", ARRAY_N);
-	$str = serialize($data);
-	$clt->newChunkedPart(strlen($str).":".$str);
-	$clt->closeChunkedPart();
-	$resp = $clt->getResponse();
-	if (array_key_exists('status', $resp) && ($resp['status'] != '200')) {
-		return false;
-	}
-	return true;
-}
-
-function bvTableKeys($table) {
-	global $wpdb;
-	$info = $wpdb->get_results("SHOW KEYS FROM $table;", ARRAY_A);
-	bvStatusAdd("table_keys", $info);
-	return true;
-}
-
-function bvDescribeTable($table) {
-	global $wpdb;
-	$info = $wpdb->get_results("DESCRIBE $table;", ARRAY_A);
-	bvStatusAdd("table_description", $info);
-	return true;
-}
-
-function bvCheckTable($table, $type) {
-	global $wpdb;
-	$info = $wpdb->get_results("CHECK TABLE $table $type;", ARRAY_A);
-	bvStatusAdd("status", $info);
-	return true;
-}
-
-function bvTableInfo($tbl, $offset = 0, $limit = 0, $bsize = 512, $filter = "") {
-	global $wpdb;
-
-	$clt = new bvHttpClient();
-	if (strlen($clt->errormsg) > 0) {
-		return false;
-	}
-	$clt->uploadChunkedFile(bvGetUrl("tableinfo")."&offset=".$offset, "tablename", $tbl);
-	$str = "SHOW CREATE TABLE " . $tbl . ";";
-	$create = $wpdb->get_var($str, 1);
-	$rows_count = $wpdb->get_var("SELECT COUNT(*) FROM ".$tbl);
-	$data = array();
-	$data["create"] = $create;
-	$data["count"] = intval($rows_count);
-	$data["encoding"] = mysql_client_encoding();
-	$str = serialize($data);
-	$clt->newChunkedPart(strlen($str).":".$str);
-
-	if ($limit == 0) {
-		$limit = $rows_count;
-	}
-	$srows = 1;
-	while (($limit > 0) && ($srows > 0)) {
-		if ($bsize > $limit)
-			$bsize = $limit;
-		$rows = $wpdb->get_results("SELECT * FROM $tbl $filter LIMIT $bsize OFFSET $offset", ARRAY_A);
-		$srows = sizeof($rows);
-		$data = array();
-		$data["table"] = $tbl;
-		$data["offset"] = $offset;
-		$data["size"] = $srows;
-		$data["md5"] = md5(serialize($rows));
-		$str = serialize($data);
-		$clt->newChunkedPart(strlen($str).":".$str);
-		$offset += $srows;
-		$limit -= $srows;
-	}
-	$clt->closeChunkedPart();
-	$resp = $clt->getResponse();
-	if (array_key_exists('status', $resp) && ($resp['status'] != '200')) {
-		return false;
-	}
-	return true;
-}
-
-function bvUploadRows($tbl, $offset = 0, $limit = 0, $bsize = 512, $filter = "") {
-	global $wpdb;
-	$clt = new bvHttpClient();
-	if (strlen($clt->errormsg) > 0) {
-		return false;
-	}
-	$clt->uploadChunkedFile(bvGetUrl("uploadrows")."&offset=".$offset, "tablename", $tbl);
-
-	if ($limit == 0) {
-		$limit = $wpdb->get_var("SELECT COUNT(*) FROM ".$tbl);
-	}
-	$srows = 1;
-	while (($limit > 0) && ($srows > 0)) {
-		if ($bsize > $limit)
-			$bsize = $limit;
-		$rows = $wpdb->get_results("SELECT * FROM $tbl $filter LIMIT $bsize OFFSET $offset", ARRAY_A);
-		$srows = sizeof($rows);
-		$data = array();
-		$data["offset"] = $offset;
-		$data["size"] = $srows;
-		$data["rows"] = $rows;
-		$data["md5"] = md5(serialize($rows));
-		$str = serialize($data);
-		$clt->newChunkedPart(strlen($str).":".$str);
-		$offset += $srows;
-		$limit -= $srows;
-	}
-	$clt->closeChunkedPart();
-	$resp = $clt->getResponse();
-	if (array_key_exists('status', $resp) && ($resp['status'] != '200')) {
-		return false;
-	}
-	return true;
-}
-
-function bvUpdateKeys($publickey, $secretkey) {
-	bvUpdate_option('bvPublic', $publickey);
-	bvUpdate_option('bvSecretKey', $secretkey);
-}
-
-function bvUpdate_option($key, $value) {
-	if (bvIsMU()) {
-		update_blog_option(1, $key, $value);
-	} else {
-		update_option($key, $value);
-	}
-}
-
-function bvGet_option($key) {
-	if (bvIsMU()) {
-		return get_blog_option(1, $key);
-	} else {
-		return get_option($key);
-	}
-}
-
-function bvGetAllTables() {
-	global $wpdb;
-	$all_tables = $wpdb->get_results("SHOW TABLES", ARRAY_N);
-	$all_tables = array_map(create_function('$a', 'return $a[0];'), $all_tables);
-	return $all_tables;
-}
 
 
-/* Control Channel */
-function bvAuthenticateControlRequest() {
-	$secret = urlencode(bvGet_option('bvSecretKey'));
-	$method = $_REQUEST['bvMethod'];
-	$sig = $_REQUEST['sig'];
-	$time = intval($_REQUEST['bvTime']);
-	$version = $_REQUEST['bvVersion'];
-	if ($time < intval(bvGet_option('bvLastRecvTime')) - 300) {
-		return false;
-	}
-	if (md5($method.$secret.$time.$version) != $sig) {
-		return false;
-	}
-	bvUpdate_option('bvLastRecvTime', $time);
-	return true;
-}
-
-function bvIsMU() {
-	if (function_exists('is_multisite'))
-		return is_multisite();
-	return false;
-}
-
-function bvIsMainSite() {
-	if (!function_exists('is_main_site' ) || !bvIsMU())
+	/* Control Channel */
+	function authenticateControlRequest() {
+		$secret = urlencode($this->getOption('bvSecretKey'));
+		$method = $_REQUEST['bvMethod'];
+		$sig = $_REQUEST['sig'];
+		$time = intval($_REQUEST['bvTime']);
+		$version = $_REQUEST['bvVersion'];
+		if ($time < intval($this->getOption('bvLastRecvTime')) - 300) {
+			return false;
+		}
+		if (md5($method.$secret.$time.$version) != $sig) {
+			return false;
+		}
+		$this->updateOption('bvLastRecvTime', $time);
 		return true;
-	return is_main_site();
+	}
+
+	function isMultisite() {
+		if (function_exists('is_multisite'))
+			return is_multisite();
+		return false;
+	}
+
+	function isMainSite() {
+		if (!function_exists('is_main_site' ) || !$this->isMultisite())
+			return true;
+		return is_main_site();
+	}
+
+	function uploadPath() {
+		$dir = wp_upload_dir();
+
+		return $dir['basedir'];
+	}
+
 }
+$blogvault = BlogVault::getInstance();
+} // class exists
 
-function bvUploadPath() {
-	$dir = wp_upload_dir();
-
-	return $dir['basedir'];
-}
-
+if (!class_exists('BVDynamicBackup')) {
 class BVDynamicBackup {
 	function BVDynamicBackup() {
 		$this->__construct();
@@ -728,22 +764,22 @@ class BVDynamicBackup {
 	}
 
 	function send_updates() {
-		global $bvDynamicEvents;
+		global $bvDynamicEvents, $blogvault;
 		if (count($bvDynamicEvents) == 0) {
 			return true;
 		}
-		$clt = new bvHttpClient();
+		$clt = new BVHttpClient();
 		if (strlen($clt->errormsg) > 0) {
 			return false;
 		}
-		if (bvIsMU()) {
+		if ($blogvault->isMultisite()) {
 			$site_id = get_current_blog_id();
 		} else {
 			$site_id = 1;
 		}
 		$timestamp = gmmktime();
 		// Should we do a GET to bypass hosts which might block POSTS
-		$resp = $clt->post(bvGetUrl("dynamic_updates"), array(), array('events' => serialize($bvDynamicEvents),
+		$resp = $clt->post($blogvault->getUrl("dynamic_updates"), array(), array('events' => serialize($bvDynamicEvents),
 			'site_id' => $site_id, 'timestamp' => $timestamp, 'wpurl' => urlencode(network_site_url())));
 		if ($resp['status'] != '200') {
 			return false;
@@ -913,7 +949,8 @@ class BVDynamicBackup {
 	}
 
 	function theme_action_handler($theme) {
-		$this->add_event('themes', array('theme' => bvGet_option('stylesheet')));
+		global $blogvault;
+		$this->add_event('themes', array('theme' => $blogvault->getOption('stylesheet')));
 	}
 
 	function plugin_action_handler($plugin='') {
@@ -936,6 +973,7 @@ class BVDynamicBackup {
 
 	/* ADDING ACTION AND LISTENERS FOR CAPTURING EVENTS. */
 	function add_actions_and_listeners() {
+		global $blogvault;
 		/* CAPTURING EVENTS FOR WP_COMMENTS TABLE */
 		add_action('delete_comment', array($this, 'comment_action_handler'));
 		add_action('wp_set_comment_status', array($this, 'comment_action_handler'));
@@ -1007,7 +1045,7 @@ class BVDynamicBackup {
 		/* CAPTURING EVENTS FOR FILES UPLOAD */
 		add_action('wp_handle_upload', array($this, 'upload_handler'));
 
-		if (bvIsMU()) {
+		if ($blogvault->isMultisite()) {
 			add_action('wpmu_new_blog', array($this, 'wpmu_new_blog_create_handler'), 10, 1);
 			add_action('refresh_blog_details', array($this, 'wpmu_new_blog_create_handler'), 10, 1);
 			/* XNOTE: Handle registration_log_handler from within the server */
@@ -1025,9 +1063,11 @@ class BVDynamicBackup {
 		add_action('shutdown', array($this, 'send_updates'));
 	}
 }
+} // class exists
+
 
 if ((array_key_exists('apipage', $_REQUEST)) && stristr($_REQUEST['apipage'], 'blogvault')) {
-	global $bvRespArray;
+	global $blogvault;
 	global $wp_version, $wp_db_version;
 	global $wpdb, $bvVersion;
 	if (array_key_exists('obend', $_REQUEST) && function_exists('ob_end_clean'))
@@ -1039,15 +1079,14 @@ if ((array_key_exists('apipage', $_REQUEST)) && stristr($_REQUEST['apipage'], 'b
 		header("Content-type: application/binary");
 		header('Content-Transfer-Encoding: binary');
 	}
-	bvStatusAdd("signature", "Blogvault API");
-	if (!bvAuthenticateControlRequest()) {
-		bvStatusAdd("statusmsg", 'failed authentication');
-		bvStatusAdd("public", substr(bvGet_option('bvPublic'), 0, 6));
-		die(serialize($bvRespArray));
-		exit;
+	$blogvault->addStatus("signature", "Blogvault API");
+	if (!$blogvault->authenticateControlRequest()) {
+		$blogvault->addStatus("statusmsg", 'failed authentication');
+		$blogvault->addStatus("public", substr($blogvault->getOption('bvPublic'), 0, 6));
+		$blogvault->terminate();
 	}
 	$method = urldecode($_REQUEST['bvMethod']);
-	bvStatusAdd("callback", $method);
+	$blogvault->addStatus("callback", $method);
 	if (!(array_key_exists('stripquotes', $_REQUEST)) && (get_magic_quotes_gpc() || function_exists('wp_magic_quotes'))) {
 		$_REQUEST = array_map( 'stripslashes_deep', $_REQUEST );
 	}
@@ -1072,17 +1111,17 @@ if ((array_key_exists('apipage', $_REQUEST)) && stristr($_REQUEST['apipage'], 'b
 		$offset = intval(urldecode($_REQUEST['offset']));
 		$limit = intval(urldecode($_REQUEST['limit']));
 		$bsize = intval(urldecode($_REQUEST['bsize']));
-		bvStatusAdd("status", bvUploadFiles($files, $offset, $limit, $bsize));
+		$blogvault->addStatus("status", $blogvault->uploadFiles($files, $offset, $limit, $bsize));
 		break;
 	case "sendfilesmd5":
 		$files = $_REQUEST['files'];
 		$offset = intval(urldecode($_REQUEST['offset']));
 		$limit = intval(urldecode($_REQUEST['limit']));
 		$bsize = intval(urldecode($_REQUEST['bsize']));
-		bvStatusAdd("status", bvFileMD5($files, $offset, $limit, $bsize));
+		$blogvault->addStatus("status", $blogvault->fileMd5($files, $offset, $limit, $bsize));
 		break;
 	case "listtables":
-		bvStatusAdd("status", bvListTables());
+		$blogvault->addStatus("status", $blogvault->listTables());
 		break;
 	case "tableinfo":
 		$table = urldecode($_REQUEST['table']);
@@ -1090,7 +1129,7 @@ if ((array_key_exists('apipage', $_REQUEST)) && stristr($_REQUEST['apipage'], 'b
 		$limit = intval(urldecode($_REQUEST['limit']));
 		$bsize = intval(urldecode($_REQUEST['bsize']));
 		$filter = urldecode($_REQUEST['filter']);
-		bvStatusAdd("status", bvTableInfo($table, $offset, $limit, $bsize, $filter));
+		$blogvault->addStatus("status", $blogvault->tableInfo($table, $offset, $limit, $bsize, $filter));
 		break;
 	case "uploadrows":
 		$table = urldecode($_REQUEST['table']);
@@ -1098,29 +1137,29 @@ if ((array_key_exists('apipage', $_REQUEST)) && stristr($_REQUEST['apipage'], 'b
 		$limit = intval(urldecode($_REQUEST['limit']));
 		$bsize = intval(urldecode($_REQUEST['bsize']));
 		$filter = urldecode($_REQUEST['filter']);
-		bvStatusAdd("status", bvUploadRows($table, $offset, $limit, $bsize, $filter));
+		$blogvault->addStatus("status", $blogvault->uploadRows($table, $offset, $limit, $bsize, $filter));
 		break;
 	case "sendactivate":
-		bvStatusAdd("status", bvActivateServer());
+		$blogvault->addStatus("status", $blogvault->activate());
 		break;
 	case "scanfilesdefault":
-		bvStatusAdd("status", bvScanFiles());
+		$blogvault->addStatus("status", $blogvault->scanFiles());
 		break;
 	case "scanfiles":
 		$initdir = urldecode($_REQUEST['initdir']);
 		$offset = intval(urldecode($_REQUEST['offset']));
 		$limit = intval(urldecode($_REQUEST['limit']));
 		$bsize = intval(urldecode($_REQUEST['bsize']));
-		bvStatusAdd("status", bvScanFiles($initdir, $offset, $limit, $bsize));
+		$blogvault->addStatus("status", $blogvault->scanFiles($initdir, $offset, $limit, $bsize));
 		break;
 	case "setdynsync":
-		bvUpdate_option('bvDynSyncActive', $_REQUEST['dynsync']);
+		$blogvault->updateOption('bvDynSyncActive', $_REQUEST['dynsync']);
 		break;
 	case "setserverid":
-		bvUpdate_option('bvServerId', $_REQUEST['serverid']);
+		$blogvault->updateOption('bvServerId', $_REQUEST['serverid']);
 		break;
 	case "updatekeys":
-		bvStatusAdd("status", bvUpdateKeys($_REQUEST['public'], $_REQUEST['secret']));
+		$blogvault->addStatus("status", $blogvault->updateKeys($_REQUEST['public'], $_REQUEST['secret']));
 		break;
 	case "phpinfo":
 		phpinfo();
@@ -1138,24 +1177,24 @@ if ((array_key_exists('apipage', $_REQUEST)) && stristr($_REQUEST['apipage'], 'b
 			foreach($keys as $key) {
 				$pdata[$key] = $post_array[$key];
 			}
-			bvStatusAddArray("posts", $pdata);
+			$blogvault->addArrayToStatus("posts", $pdata);
 		}
 		break;
 	case "getstats":
 		if (!function_exists('wp_count_posts'))
 			require_once (ABSPATH."wp-includes/post.php");
 		require_once (ABSPATH."wp-includes/pluggable.php");
-		bvStatusAdd("posts", get_object_vars(wp_count_posts()));
-		bvStatusAdd("pages", get_object_vars(wp_count_posts("page")));
-		bvStatusAdd("comments", get_object_vars(wp_count_comments()));
+		$blogvault->addStatus("posts", get_object_vars(wp_count_posts()));
+		$blogvault->addStatus("pages", get_object_vars(wp_count_posts("page")));
+		$blogvault->addStatus("comments", get_object_vars(wp_count_comments()));
 		break;
 	case "getinfo":
 		if (array_key_exists('wp', $_REQUEST)) {
 			$wp_info = array(
 				'current_theme' => (string)(function_exists('wp_get_theme') ? wp_get_theme() : get_current_theme()),
 				'dbprefix' => $wpdb->base_prefix ? $wpdb->base_prefix : $wpdb->prefix,
-				'wpmu' => bvIsMU(),
-				'mainsite' => bvIsMainSite(),
+				'wpmu' => $blogvault->isMultisite(),
+				'mainsite' => $blogvault->isMainSite(),
 				'name' => get_bloginfo('name'),
 				'site_url' => get_bloginfo('wpurl'),
 				'home_url' => get_bloginfo('url'),
@@ -1163,7 +1202,7 @@ if ((array_key_exists('apipage', $_REQUEST)) && stristr($_REQUEST['apipage'], 'b
 				'wpversion' => $wp_version,
 				'dbversion' => $wp_db_version,
 				'abspath' => ABSPATH,
-				'uploadpath' => bvUploadPath(),
+				'uploadpath' => $blogvault->uploadPath(),
 				'contentdir' => defined('WP_CONTENT_DIR') ? WP_CONTENT_DIR : null,
 				'plugindir' => defined('WP_PLUGIN_DIR') ? WP_PLUGIN_DIR : null,
 				'dbcharset' => defined('DB_CHARSET') ? DB_CHARSET : null,
@@ -1171,7 +1210,7 @@ if ((array_key_exists('apipage', $_REQUEST)) && stristr($_REQUEST['apipage'], 'b
 				'disallow_file_mods' => defined('DISALLOW_FILE_MODS'),
 				'bvversion' => $bvVersion
 			);
-			bvStatusAdd("wp", $wp_info);
+			$blogvault->addStatus("wp", $wp_info);
 		}
 		if (array_key_exists('plugins', $_REQUEST)) {
 			if (!function_exists('get_plugins'))
@@ -1184,7 +1223,7 @@ if ((array_key_exists('apipage', $_REQUEST)) && stristr($_REQUEST['apipage'], 'b
 					'version' => $plugin_data['Version'],
 					'active' => is_plugin_active($plugin_file)
 				);
-				bvStatusAddArray("plugins", $pdata);
+				$blogvault->addArrayToStatus("plugins", $pdata);
 			}
 		}
 		if (array_key_exists('themes', $_REQUEST)) {
@@ -1207,7 +1246,7 @@ if ((array_key_exists('apipage', $_REQUEST)) && stristr($_REQUEST['apipage'], 'b
 						'version' => $theme["Version"]
 					);
 				}
-				bvStatusAddArray("themes", $pdata);
+				$blogvault->addArrayToStatus("themes", $pdata);
 			}
 		}
 		if (array_key_exists('users', $_REQUEST)) {
@@ -1223,7 +1262,7 @@ if ((array_key_exists('apipage', $_REQUEST)) && stristr($_REQUEST['apipage'], 'b
 						'login' => $user->user_login,
 						'ID' => $user->ID
 					);
-					bvStatusAddArray("users", $pdata);
+					$blogvault->addArrayToStatus("users", $pdata);
 				}
 			}
 		}
@@ -1241,33 +1280,32 @@ if ((array_key_exists('apipage', $_REQUEST)) && stristr($_REQUEST['apipage'], 'b
 				$sys_info['webuid'] = posix_getuid();
 				$sys_info['webgid'] = posix_getgid();
 			}
-			bvStatusAdd("sys", $sys_info);
+			$blogvault->addStatus("sys", $sys_info);
 		}
 		break;
 	case "describetable":
 		$table = urldecode($_REQUEST['table']);
-		bvDescribeTable($table);
+		$blogvault->describeTable($table);
 		break;
 	case "checktable":
 		$table = urldecode($_REQUEST['table']);
 		$type = urldecode($_REQUEST['type']);
-		bvCheckTable($table, $type);
+		$blogvault->checkTable($table, $type);
 		break;
 	case "tablekeys":
 		$table = urldecode($_REQUEST['table']);
-		bvTableKeys($table);
+		$blogvault->tableKeys($table);
 		break;
 	default:
-		bvStatusAdd("statusmsg", "Bad Command");
-		bvStatusAdd("status", false);
+		$blogvault->addStatus("statusmsg", "Bad Command");
+		$blogvault->addStatus("status", false);
 		break;
 	}
 
-	die("bvbvbvbvbv".serialize($bvRespArray)."bvbvbvbvbv");
-	exit;
+	$blogvault->terminate();
 }
 
-$isdynsyncactive = bvGet_option('bvDynSyncActive');
+$isdynsyncactive = $blogvault->getOption('bvDynSyncActive');
 if ($isdynsyncactive == 'yes') {
 	BVDynamicBackup::init();
 }

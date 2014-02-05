@@ -74,5 +74,10 @@ We maintain multiple back up of the data on our extremely secure and robust serv
 Yes. You can store a snapshot of your backup to your Dropbox account.
 
 == Changelog ==
+= 1.04 =
+* Separating the different blogVault functions into classes
+* Ability to update the blogVault Key
+* Retrieving/Updating option only on the main site of a Network install
+
 = 1.02 =
 * Releasing the blogVault plugin into the WordPress repository.

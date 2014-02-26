@@ -31,6 +31,7 @@ Features:
 11. Real-time backups will save any changes made to your site as soon as they are made. No posts or comments will ever be lost.
 12. We have been doing this for over 3 years and provide the best technical support. In case something goes wrong we are here to help.
 13. Save your backups to your own Dropbox account.
+14. Real-time backups for WooCommerce sites. Now no transactions data will be lost even if the crash occurs hours after the last complete backup.
 
 The blogVault team strives endlessly to provide the best WordPress backup service to you. Our system is constantly upgraded to make it more secure, robust, and efficient.
 
@@ -74,6 +75,9 @@ We maintain multiple back up of the data on our extremely secure and robust serv
 Yes. You can store a snapshot of your backup to your Dropbox account.
 
 == Changelog ==
+= 1.05 =
+* Real-time backup for WooCommerce
+
 = 1.04 =
 * Separating the different blogVault functions into classes
 * Ability to update the blogVault Key

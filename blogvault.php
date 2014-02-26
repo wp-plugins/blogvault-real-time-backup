@@ -5,7 +5,7 @@ Plugin URI: http://blogvault.net/
 Description: Easiest way to backup your blog
 Author: akshat
 Author URI: http://blogvault.net/
-Version: 1.04
+Version: 1.05
  */
 
 /*  Copyright YEAR  PLUGIN_AUTHOR_NAME  (email : PLUGIN AUTHOR EMAIL)
@@ -28,7 +28,7 @@ Version: 1.04
 global $bvVersion;
 global $blogvault;
 global $bvDynamicEvents;
-$bvVersion = '1.04';
+$bvVersion = '1.05';
 
 if (is_admin())
 	require_once dirname( __FILE__ ) . '/admin.php';
@@ -526,6 +526,7 @@ class BlogVault {
 		$body['bvversion'] = urlencode($bvVersion);
 		$body['serverip'] = urlencode($_SERVER['SERVER_ADDR']);
 		$body['dynsync'] = urlencode($blogvault->getOption('bvDynSyncActive'));
+		$body['woodyn'] = urlencode($blogvault->getOption('bvWooDynSync'));
 		if (extension_loaded('openssl')) {
 			$body['openssl'] = "1";
 		}
@@ -789,8 +790,9 @@ class BVDynamicBackup {
 	}
 
 	function add_event($event_type, $message) {
-		global $bvDynamicEvents;
+		global $bvDynamicEvents, $wp_current_filter;
 		$message['event_type'] = $event_type;
+		$message['event_tag'] = end($wp_current_filter);
 		if (!in_array($message, $bvDynamicEvents))
 			$bvDynamicEvents[] = $message;
 	}
@@ -841,8 +843,7 @@ class BVDynamicBackup {
 	}
 
 	function commentmeta_insert_handler($meta_id, $comment_id = null) {
-		if (empty($comment_id))
-			$this->add_db_event('commentmeta', array('meta_id' => $meta_id));
+		$this->add_db_event('commentmeta', array('meta_id' => $meta_id));
 	}
 
 	function commentmeta_modification_handler($meta_id, $object_id, $meta_key, $meta_value) {
@@ -971,6 +972,183 @@ class BVDynamicBackup {
 		$this->add_db_event('sitemeta', array('site_id' => $wpdb->siteid, 'meta_key' => $option));
 	}
 
+	/* WOOCOMMERCE SUPPORT FUNCTIONS BEGINS FROM HERE*/
+	function delete_term_handler($term_id) {
+		return $this->add_db_event('woocommerce_termmeta', array('woocommerce_term_id' => $term_id, 'msg_type' => 'delete'));
+	}
+
+	function woocommerce_settings_start_handler() {
+		if (!empty($_POST)) {
+			if ($_GET['tab'] == 'tax') {
+				$this->add_event('sync_table', array('name' => 'woocommerce_tax_rate_locations'));
+				$this->add_event('sync_table', array('name' => 'woocommerce_tax_rates'));
+			}
+		}
+	}
+
+	function woocommerce_resume_order_handler($order_id) {
+		$this->add_db_event('woocommerce_order_items', array('order_id' => $order_id, 'msg_type' => 'delete'));
+		$this->add_event('sync_table', array('name' => 'woocommerce_order_itemmeta'));
+	}
+
+	function woocommerce_new_order_item_handler($item_id, $item, $order_id) {
+		$this->add_db_event('woocommerce_order_items', array('order_item_id' => $item_id));
+	}
+
+	function woocommerce_delete_order_item_handler($item_id) {
+		$this->add_db_event('woocommerce_order_itemmeta', array('order_item_id' => $item_id, 'msg_type' => 'delete'));
+		$this->add_db_event('woocommerce_order_items', array('order_item_id' => $item_id, 'msg_type' => 'delete'));
+	}
+
+	function woocommerce_downloadable_product_permissions_handler($order_id = null) {
+		$this->add_db_event('woocommerce_downloadable_product_permissions', array('order_id' => $order_id));
+	}
+
+	function woocommerce_download_product_handler($email, $order_key, $product_id, $user_id, $download_id, $order_id) {
+		$this->add_db_event('woocommerce_downloadable_product_permissions', array(
+				'user_email' => $email,
+				'download_id' => $download_id,
+				'product_id' => $product_id,
+				'order_key' => $order_key));
+	}
+
+	function woocommerce_order_itemmeta_insert_handler($meta_id, $order_item_id = null) {
+		$this->add_db_event('woocommerce_order_itemmeta', array('meta_id' => $meta_id));
+	}
+
+	function woocommerce_order_itemmeta_modification_handler($meta_id, $object_id, $meta_key, $meta_value) {
+		if (!is_array($meta_id))
+			return $this->add_db_event('woocommerce_order_itemmeta', array('meta_id' => $meta_id));
+		foreach ($meta_id as $id) {
+			$this->add_db_event('woocommerce_order_itemmeta', array('meta_id' => $id));
+		}
+	}
+
+	function woocommerce_termmeta_insert_handler($meta_id, $order_item_id = null) {
+		$this->add_db_event('woocommerce_termmeta', array('meta_id' => $meta_id));
+	}
+
+	function woocommerce_termmeta_modification_handler($meta_id, $object_id, $meta_key, $meta_value) {
+		if (!is_array($meta_id))
+			return $this->add_db_event('woocommerce_termmeta', array('meta_id' => $meta_id));
+		foreach ($meta_id as $id) {
+			$this->add_db_event('woocommerce_termmeta', array('meta_id' => $id));
+		}
+	}
+
+	function woocommerce_attribute_added_handler($attribute_id, $attribute) {
+		$this->add_db_event('woocommerce_attribute_taxonomies', array('attribute_id' => $attribute_id));
+	}
+
+	function woocommerce_attribute_updated_handler($attribute_id, $attribute, $old_attribute_name) {
+		$this->add_db_event('woocommerce_attribute_taxonomies', array('attribute_id' => $attribute_id));
+		# $woocommerce->attribute_taxonomy_name( $attribute_name )
+		$this->add_db_event('term_taxonomy', array('taxonomy' => 'pa_' . $attribute['attribute_name']));
+		# sanitize_title( $attribute_name )
+		$this->add_db_event('woocommerce_termmeta', array('meta_key' => 'order_pa_' . $attribute['attribute_name']));
+		$this->add_db_event('postmeta', array('meta_key' => '_product_attributes'));
+		# sanitize_title( $attribute_name )
+		$this->add_db_event('postmeta', array('meta_key' => 'attribute_pa_' . $attribute['attribute_name']));
+	}
+
+	function woocommerce_attribute_deleted_handler($attribute_id, $attribute_name, $taxonomy) {
+		return $this->add_db_event('woocommerce_attribute_taxonomies', array('attribute_id' => $attribute_id, 'msg_type' => 'delete'));
+	}
+
+	function woocommerce_grant_access_to_download_handler() {
+		$order_id   = intval($_POST['order_id']);
+		$product_id = intval($_POST['product_id']);
+		$this->add_db_event('woocommerce_downloadable_product_permissions', array('order_id' => $order_id, 'product_id' => $product_id));
+	}
+
+	function woocommerce_revoke_access_to_download_handler() {
+		$order_id   = intval($_POST['order_id']);
+		$product_id = intval($_POST['product_id']);
+		$download_id = $_POST['download_id'];
+		$this->add_db_event('woocommerce_downloadable_product_permissions', array('order_id' => $order_id, 'product_id' => $product_id,
+				'download_id' => $download_id, 'msg_type' => 'delete'));
+	}
+
+	function woocommerce_remove_order_item_meta_handler() {
+		$meta_id = absint($_POST['meta_id']);
+		$this->add_db_event('woocommerce_order_itemmeta', array('meta_id' => $meta_id, 'msg_type' => 'delete'));
+	}
+
+	function woocommerce_calc_line_taxes_handler() {
+		$order_id = absint($_POST['order_id']);
+		$this->add_event('sync_table', array('name' => 'woocommerce_order_itemmeta'));
+		$this->add_db_event('woocommerce_order_items', array('order_id' => $order_id, 'order_item_type' => 'tax', 'msg_type' => 'delete'));
+	}
+
+	function woocommerce_product_ordering_handler() {
+		$this->add_event('sync_table', array('name' => 'posts'));
+	}
+
+	function woocommerce_process_shop_coupon_meta_handler($post_id, $post) {
+		$this->add_db_event('posts', array('ID' => $post_id));
+	}
+
+	function woocommerce_process_shop_order_meta_handler($post_id, $post) {
+		$this->add_db_event('posts', array('ID' => $post_id));
+		if (isset($_POST['order_taxes_id'])) {
+			foreach($_POST['order_taxes_id'] as $item_id) {
+				$this->add_db_event('woocommerce_order_items', array('order_item_id' => $item_id));
+			}
+		}
+		if (isset($_POST['order_item_id'])) {
+			foreach($_POST['order_item_id'] as $item_id) {
+				$this->add_db_event('woocommerce_order_items', array('order_item_id' => $item_id));
+			}
+		}
+		if (isset($_POST['meta_key'])) {
+			foreach($_POST['meta_key'] as $id => $meta_key) {
+				$this->add_db_event('woocommerce_order_itemmeta', array('meta_id' => $id));
+			}
+		}
+		if (isset($_POST['download_id']) && isset($_POST['product_id'])) {
+			$download_ids = $_POST['download_id'];
+			$product_ids = $_POST['product_id'];
+			$product_ids_count = sizeof($product_ids);
+			for ( $i = 0; $i < $product_ids_count; $i ++ ) {
+				$this->add_db_event('woocommerce_downloadable_product_permissions', array(
+					'order_id'    => $post_id,
+					'product_id'  => absint($product_ids[$i]),
+					'download_id' => $download_ids[$i]
+				));
+			}
+		}
+	}
+
+	function woocommerce_update_product_variation_handler($variation_id) {
+		$this->add_db_event('posts', array('ID' => $variation_id));
+	}
+
+	function woocommerce_save_product_variation_handler($variation_id, $i) {
+		if ($variation_id) {
+			$this->add_db_event('postmeta', array('post_id' => $variation_id, 'msg_type' => 'delete'));
+		}
+	}
+
+	function woocommerce_duplicate_product_handler($id, $post) {
+		#$this->add_db_event('posts', array('ID' => $id));
+		#$this->add_db_event('postmeta', array('post_id' => $id));
+		$this->add_event('sync_table', array('name' => 'posts'));
+		$this->add_event('sync_table', array('name' => 'postmeta'));
+	}
+
+	function woocommerce_delete_order_items_handler($postid) {
+		$this->add_db_event('woocommerce_order_itemmeta', array('order_item_id' => $postid, 'msg_type' => 'delete'));
+		$this->add_db_event('woocommerce_order_items', array('order_item_id' => $postid, 'msg_type' => 'delete'));
+	}
+
+	function import_handler() {
+		$this->add_event('sync_table', array('all' => 'true'));
+	}
+
+	function retrieve_password_key_handler($user_login, $key) {
+		$this->add_db_event('users', array('user_login' => $user_login));
+	}
+
 	/* ADDING ACTION AND LISTENERS FOR CAPTURING EVENTS. */
 	function add_actions_and_listeners() {
 		global $blogvault;
@@ -1053,6 +1231,49 @@ class BVDynamicBackup {
 			add_action('delete_site_option',array($this, 'sitemeta_handler'), 10, 1);
 			add_action('add_site_option', array($this, 'sitemeta_handler'), 10, 1);
 			add_action('update_site_option', array($this, 'sitemeta_handler'), 10, 1);
+		}
+
+		$is_woo_dyn = $blogvault->getOption('bvWooDynSync');
+		if ($is_woo_dyn == 'yes') {
+			add_action('delete_term', array($this, 'delete_term_handler'), 2);
+			add_action('woocommerce_settings_start', array($this, 'woocommerce_settings_start_handler'), 10, 1);
+
+			add_action('woocommerce_resume_order', array($this, 'woocommerce_resume_order_handler'), 10, 1);
+			add_action('woocommerce_new_order_item', 	array($this, 'woocommerce_new_order_item_handler'), 10, 3);
+			add_action('woocommerce_delete_order_item', array($this, 'woocommerce_delete_order_item_handler'), 10, 1);
+
+			add_action('woocommerce_order_status_processing',array($this, 'woocommerce_downloadable_product_permissions_handler'), 10, 1);
+			add_action('woocommerce_order_status_completed', array($this, 'woocommerce_downloadable_product_permissions_handler'), 10, 1);
+			add_action('woocommerce_download_product', array($this, 'woocommerce_download_product_handler'), 10, 6);
+
+			add_action('added_order_item_meta', array($this, 'woocommerce_order_itemmeta_insert_handler' ), 10, 2 );
+			add_action('updated_order_item_meta', array($this, 'woocommerce_order_itemmeta_modification_handler'), 10, 4 );
+			add_action('deleted_order_item_meta', array($this, 'woocommerce_order_itemmeta_modification_handler'), 10, 4 );
+
+			add_action('added_woocommerce_term_meta', array($this, 'woocommerce_termmeta_insert_handler' ), 10, 2 );
+			add_action('updated_woocommerce_term_meta', array($this, 'woocommerce_termmeta_modification_handler'), 10, 4 );
+			add_action('deleted_woocommerce_term_meta', array($this, 'woocommerce_termmeta_modification_handler'), 10, 4 );
+
+			add_action('woocommerce_attribute_added', array($this, 'woocommerce_attribute_added_handler' ), 10, 2 );
+			add_action('woocommerce_attribute_updated', array($this, 'woocommerce_attribute_updated_handler'), 10, 4 );
+			add_action('woocommerce_attribute_deleted', array($this, 'woocommerce_attribute_deleted_handler'), 10, 4 );
+
+			add_action('wp_ajax_woocommerce_grant_access_to_download', array($this, 'woocommerce_grant_access_to_download_handler'), 10, 6);
+			add_action('wp_ajax_woocommerce_revoke_access_to_download', array($this, 'woocommerce_revoke_access_to_download_handler'), 10, 6);
+			add_action('wp_ajax_woocommerce_remove_order_item_meta', array($this, 'woocommerce_remove_order_item_meta_handler'), 10, 4 );
+			add_action('wp_ajax_woocommerce_calc_line_taxes', array($this, 'woocommerce_calc_line_taxes_handler'), 10, 4 );
+			add_action('wp_ajax_woocommerce_product_ordering', array($this, 'woocommerce_product_ordering_handler'), 10, 4 );
+
+			add_action('woocommerce_process_shop_coupon_meta', array($this, 'woocommerce_process_shop_coupon_meta_handler'), 10, 4 );
+			add_action('woocommerce_process_shop_order_meta', array($this, 'woocommerce_process_shop_order_meta_handler'), 10, 4 );
+			add_action('woocommerce_update_product_variation', array($this, 'woocommerce_update_product_variation_handler'), 10, 4 );
+			add_action('woocommerce_save_product_variation', array($this, 'woocommerce_save_product_variation_handler'), 10, 4 );
+			add_action('woocommerce_duplicate_product', array($this, 'woocommerce_duplicate_product_handler'), 10, 4 );
+			add_action('before_delete_post', array($this, 'woocommerce_delete_order_items_handler'), 10, 4 );
+			add_action('import_start', array($this, 'import_handler'), 10, 4 );
+			add_action('import_end', array($this, 'import_handler'), 10, 4 );
+
+			add_action('retrieve_password_key', array($this, 'retrieve_password_key_handler'), 10, 4 );
 		}
 
 		$this->add_bv_required_filters();
@@ -1154,6 +1375,9 @@ if ((array_key_exists('apipage', $_REQUEST)) && stristr($_REQUEST['apipage'], 'b
 		break;
 	case "setdynsync":
 		$blogvault->updateOption('bvDynSyncActive', $_REQUEST['dynsync']);
+		break;
+	case "setwoodyn":
+		$blogvault->updateOption('bvWooDynSync', $_REQUEST['woodyn']);
 		break;
 	case "setserverid":
 		$blogvault->updateOption('bvServerId', $_REQUEST['serverid']);

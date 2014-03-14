@@ -21,42 +21,51 @@ endif;
 if ( !function_exists('bvKeyConf') ) :
 	function bvKeyConf() {
 		global $blogvault;
-		if (isset($_POST['blogvaultkey']) && (strlen($_POST['blogvaultkey']) == 64)) {
-			$keys = str_split($_POST['blogvaultkey'], 32);
-			$blogvault->updatekeys($keys[0], $keys[1]);
-			bvActivateHandler();
+?>
+<div style="font-size: 14px; margin-top: 40px; margin-bottom: 30px;">
+	<iframe style="border: 1px solid gray; padding: 3px;" src="https://player.vimeo.com/video/88638675?title=0&amp;byline=0&amp;portrait=0&amp;color=ffffff&amp;" width="500" height="300" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe><br/>
+	<a href="http://blogvault.net?bvsrc=wpplugin_knowmore&wpurl=<?php echo urlencode(network_site_url()) ?>">Learn more about blogVault</a>
+</div>
+<?php
+		if (isset($_REQUEST['blogvaultkey'])) {
+			if (wp_verify_nonce($_REQUEST['bvnonce'] , "bvnonce") && (strlen($_REQUEST['blogvaultkey']) == 64)) {
+				$keys = str_split($_REQUEST['blogvaultkey'], 32);
+				$blogvault->updatekeys($keys[0], $keys[1]);
+				bvActivateHandler();
+				if (isset($_REQUEST['change_parameter'])) {
+?>
+					<b><font color='green'>Keys Updated!</font></b> blogVault is now backing up your site.<br/><br/>
+<?php
+				} else {
+?>
+					<b>Activated!</b> blogVault is now backing up your site.<br/><br/>
+<?php
+				}
+			} else {
+?>
+				<b style="color:red;">Invalid request!</b> Please try again with a valid key.<br/><br/>
+<?php
+			}
 		}
 		if ($blogvault->getOption('bvPublic')) {
 ?>
-			<p style="font-size: 14px; margin-top: 40px;">
-<?php
-			if (isset($_POST['change_parameter'])) {
-?>
-				<b><font color='green'>Keys Updated!</font></b> blogVault is now backing up your site.<br/><br/>
-<?php
-			} else {
-?>
-				<b>Activated!</b> blogVault is now backing up your site.<br/><br/>
-<?php
-			}
-?>
-				<u><a href='https://webapp.blogvault.net'>Click here</a></u> to access the blogVault Dashboard.
-			</p>
+			<font size='3'><a href='https://webapp.blogvault.net' target="_blank">Click here</a> to manage your backups from the blogVault Dashboard.</font>
+			<br/><br/>
 			<form method='post'>
 				<font size='3'>Change blogVault Key:</font> <input type='text' name='blogvaultkey' size='65'>
 				<input type='hidden' name='change_parameter' value='true'>
+				<input type='hidden' name='bvnonce' value='<?php echo wp_create_nonce("bvnonce") ?>'>
 				<input type='submit' value='Change'>
 			<form>
 <?php
 		} else {
 ?>
-			<p style="font-size: 14px; margin-top: 40px;">
-				<a href='http://blogvault.net?bvsrc=bvplugin&wpurl=<?php echo urlencode(network_site_url()) ?>'> Click here </a> to get your blogVault Key.</font>
-				<form method='post'> 
-					<font size='3'>Enter blogVault Key:</font> <input type='text' name='blogvaultkey' size='65'>
-					<input type='submit' value='Activate'>	
-				<form>
-			</p>
+			<a href='http://blogvault.net?bvsrc=bvplugin&wpurl=<?php echo urlencode(network_site_url()) ?>'> Click here </a> to get your blogVault Key.</font>
+			<form method='post'> 
+				<font size='3'>Enter blogVault Key:</font> <input type='text' name='blogvaultkey' size='65'>
+				<input type='hidden' name='bvnonce' value='<?php echo wp_create_nonce("bvnonce") ?>'>
+				<input type='submit' value='Activate'>	
+			<form>
 <?php
 		}
 	}

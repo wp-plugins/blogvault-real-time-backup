@@ -107,6 +107,9 @@ We maintain multiple back up of the data on our extremely secure and robust serv
 Yes. You can store a snapshot of your backup to your Dropbox account.
 
 == Changelog ==
+= 1.07 =
+* Ability to Signup/Signin straight from within the plugin.
+
 = 1.06 =
 * Setting blogVault key now validates the nonce to prevent XSRF
 * Updating the plugin description with video introducing blogVault

@@ -173,7 +173,7 @@ if ( !function_exists('bvKeyConf') ) :
 }
 endif;
 
-if ( !function_exists(bvPointerAdminScript)) :
+if ( !function_exists('bvPointerAdminScript')) :
 	function  bvPointerAdminScript() {
 		global $blogvault;
 		$seen_it = explode( ',', (string) get_user_meta( get_current_user_id(), 'dismissed_wp_pointers', true ) );
@@ -190,7 +190,7 @@ if ( !function_exists(bvPointerAdminScript)) :
 	add_action('admin_enqueue_scripts', 'bvPointerAdminScript');
 endif;
 
-if ( !function_exists(bvPointerFooterScript)) :
+if ( !function_exists('bvPointerFooterScript')) :
 function bvPointerFooterScript() {
 ?>
 <script type="text/javascript">

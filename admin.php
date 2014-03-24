@@ -22,10 +22,9 @@ if (!function_exists('bvSetKeys')) :
 			}
 		}
 	}
+	add_action('init', 'bvSetKeys');
 endif;
 
-add_action('init', 'bvSetKeys');
-add_action('admin_enqueue_scripts', 'bvPointerAdminScript');
 if (!function_exists('bvAdminMenu')) :
 	function bvAdminMenu() {
 		add_submenu_page('plugins.php', 'blogVault', '<span id="bvAdminMenuLink">blogVault</span>', 9, 'bv-key-config', 'bvKeyConf');
@@ -188,6 +187,7 @@ if ( !function_exists(bvPointerAdminScript)) :
 			wp_enqueue_script( 'wp-pointer' );
 		}
 	}
+	add_action('admin_enqueue_scripts', 'bvPointerAdminScript');
 endif;
 
 if ( !function_exists(bvPointerFooterScript)) :

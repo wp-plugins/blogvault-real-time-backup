@@ -27,7 +27,7 @@ endif;
 
 if (!function_exists('bvAdminMenu')) :
 	function bvAdminMenu() {
-		add_submenu_page('plugins.php', 'blogVault', '<span id="bvAdminMenuLink">blogVault</span>', 9, 'bv-key-config', 'bvKeyConf');
+		add_submenu_page('plugins.php', 'blogVault', '<span id="bvAdminMenuLink">blogVault</span>', 'manage_options', 'bv-key-config', 'bvKeyConf');
 	}
 	add_action('admin_menu', 'bvAdminMenu');
 endif;

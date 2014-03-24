@@ -743,10 +743,6 @@ $blogvault = BlogVault::getInstance();
 if (!class_exists('BVDynamicBackup')) {
 class BVDynamicBackup {
 	function BVDynamicBackup() {
-		$this->__construct();
-	}
-
-	function __construct() {
 		$this->add_actions_and_listeners();
 		$this->reset_events();
 	}

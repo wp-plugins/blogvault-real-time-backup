@@ -1,6 +1,6 @@
 === blogVault Real-Time WordPress Backup ===
 Contributors: akshatc, singhsivam, shubhank_blogvault
-Tags: wordpress backups, backup, backups, wordpress backup, wordpress backup plugin, database backup, complete backup, wp backup, automatic backup, backup wordpress, theme backup, backup plugin
+Tags: backup, backup plugin, backups, wordpress backups, wordpress backup, wordpress backup plugin, database backup, complete backup, wp backup, automatic backup, backup wordpress, theme backup
 Donate link: http://blogvault.net
 Requires at least: 1.5
 Tested up to: 3.8
@@ -8,11 +8,11 @@ Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-blogVault is the best wordpress backup service that offers real-time backups. It makes it really easy restore, migrate, or secure your sites.
+blogVault is the best wordpress backup plugin that offers real-time backups. It makes it really easy restore, migrate, or secure your sites.
 
 == Description ==
 
-[blogVault](http://blogvault.net?bvsrc=wpplugin_readme) is a top-notch WordPress backup service that creates a complete backup of your WordPress site.
+[blogVault](http://blogvault.net?bvsrc=wpplugin_readme) is a top-notch WordPress backup plugin that creates daily automatic backups of your WordPress site. Backup your entire site, including files and database, with this easy to use backup plugin. Top Features:
 **Top Features**:
 
 1. **Daily automatic backup** for your entire site content, including Posts, Pages, Plugin, Images, Comments, etc.
@@ -60,13 +60,13 @@ blogVault provides 3 different plans – basic, plus, and pro, to suit different
 
 = Automatic installation =
 
-* Automatic installation is the easiest option as WordPress handles the file transfers itself. To do an automatic install of blogVault, log in to your WordPress dashboard, navigate to the Plugins menu and click Add New.
+* The backup plugin can be installed automatically just like any other. To do an automatic install of blogVault, log in to your WordPress dashboard, navigate to the Plugins menu and click Add New.
 * In the search field type **blogVault** and click Search Plugins. Once you’ve found our WordPress backup plugin you can view details about it such as the point release, rating and description. Most importantly of course, you can install it by simply clicking “Install Now”.
 * After installation, click **Activate Plugin**. The last and final step is to register with us. Enter the fields in blogVault’s user form and click **Register**.
 
 = Manual installation =
 
-The manual installation method involves downloading our backup plugin and uploading it to your web server via your favorite FTP application. The WordPress codex contains [instructions on how to do this here](http://codex.wordpress.org/Managing_Plugins#Manual_Plugin_Installation). Once completed, follow the same instructions as above to register with us and obtain a license key.
+The backup plugin can also be installed manually by downloading it from the WordPress plugin repository and then uploading it to your web server via your favorite FTP application. The WordPress codex contains [instructions on how to do this here](http://codex.wordpress.org/Managing_Plugins#Manual_Plugin_Installation). Once completed, follow the same instructions as above to register with us and obtain a license key.
 
 
 == Frequently Asked Questions ==
@@ -107,9 +107,6 @@ We maintain multiple back up of the data on our extremely secure and robust serv
 Yes. You can store a snapshot of your backup to your Dropbox account.
 
 == Changelog ==
-= 1.07 =
-* Ability to Signup/Signin straight from within the plugin.
-
 = 1.06 =
 * Setting blogVault key now validates the nonce to prevent XSRF
 * Updating the plugin description with video introducing blogVault

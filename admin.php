@@ -45,6 +45,10 @@ endif;
 if ( !function_exists('bvKeyConf') ) :
 	function bvKeyConf() {
 		global $blogvault, $bvNotice;
+		$_error = NULL;
+		if (isset($_GET['error'])) {
+			$_error = $_GET['error'];
+		}
 ?>
 <div style="font-size: 14px; margin-top: 40px; margin-bottom: 30px;">
 	<iframe style="border: 1px solid gray; padding: 3px;" src="https://player.vimeo.com/video/88638675?title=0&amp;byline=0&amp;portrait=0&amp;color=ffffff&amp;" width="500" height="300" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe><br/>
@@ -88,26 +92,26 @@ if ( !function_exists('bvKeyConf') ) :
 				<input type="hidden" name="bvsrc" value="wpplugin" />
 				<input type="hidden" name="url" value="<?php echo network_site_url(); ?>" />
 				<input type='hidden' name='bvnonce' value='<?php echo wp_create_nonce("bvnonce") ?>'>
-<?php if (isset($_GET['error']) && $_GET['error'] == "email") { ?>
+<?php if ($_error == "email") { ?>
 				<div style="color:red; font-weight: bold;">There is already an account with this email.</div>
-<?php } else if (isset($_GET['error']) && $_GET['error'] == "pass") { ?>
+<?php } else if ($_error == "pass") { ?>
 				<div style="color:red; font-weight: bold;">Password does not match.</div>
-<?php } else if (isset($_GET['error']) && $_GET['error'] == "blog") { ?>
+<?php } else if ($_error == "blog") { ?>
 				<div style="color:red; font-weight: bold;">Could not add the site. Please contact <a href="http://blogvault.net/contact/">blogVault Support</a></div>
 <?php } ?>
 				<table>
 					<tr>
-						<td><label id='label_email'<?php if ($_GET['error_email']) echo 'style="color:red;"'; ?>><strong>Email</strong></label></td>
+						<td><label id='label_email'<?php if ($_error == "email") echo 'style="color:red;"'; ?>><strong>Email</strong></label></td>
 						<td><input type="text" id="email" name="email" value="<?php echo get_option('admin_email');?>"></td>
-						<td><?php if ($_GET['error_email']) echo '<p style="font-size:smaller;color:red;">has already been taken</p>' ?></td>
+						<td><?php if ($_error == "email") echo '<p style="font-size:smaller;color:red;">has already been taken</p>' ?></td>
 					</tr>
 					<tr>
-						<td><label id='label_password' <?php if ($_GET['error_pass']) echo 'style="color:red;"'; ?>><strong>Password</strong></label></td>
+						<td><label id='label_password' <?php if ($_error == "pass") echo 'style="color:red;"'; ?>><strong>Password</strong></label></td>
 						<td><input type="password" name="password" id="password"></td>
 						<td></td>
 					</tr>
 					<tr>
-						<td><label <?php if ($_GET['error_pass_conf'] || $_GET['error_pass']) echo 'style="color:red;"'; ?>><strong>Confirm Password</strong></label></td>
+						<td><label <?php if ($_error == "pass") echo 'style="color:red;"'; ?>><strong>Confirm Password</strong></label></td>
 						<td><input type="password" name="password_confirmation" id="confirm_password"></td>
 					</tr>
 					<tr>
@@ -141,10 +145,8 @@ if ( !function_exists('bvKeyConf') ) :
 				<input type="hidden" name="bvsrc" value="wpplugin" />
 				<input type="hidden" name="url" value="<?php echo network_site_url(); ?>">
 				<input type='hidden' name='bvnonce' value='<?php echo wp_create_nonce("bvnonce") ?>'>
-<?php if (isset($_GET['usererror'])) { ?>
+<?php if ($_error == "user") { ?>
 				<div style="color:red; font-weight: bold;">Incorrect Username or Password</div>
-<?php } else if (isset($_GET['noblogerror'])) { ?>
-				<div style="color:red; font-weight: bold;">Could not add the site. Please contact <a href="http://blogvault.net/contact/">blogVault Support</a></div>
 <?php } ?>
 				<table>
 					<tr>
@@ -155,7 +157,7 @@ if ( !function_exists('bvKeyConf') ) :
 						<td width="115"><label><strong>Password</strong></label></td>
 						<td><input type="password" name="password" /></td>
 					<tr/>
-					<?php if (isset($_GET['error'])) echo '<tr><td colspan=3><p style="color:red;">The Email or password provided is incorrect</p></td></tr>' ?>
+					<?php if ($_error == "pass") echo '<tr><td colspan=3><p style="color:red;">The Email or password provided is incorrect</p></td></tr>' ?>
 				</table>
 				<div>
 					<button type="submit">Sign In</button>

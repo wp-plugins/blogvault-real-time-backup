@@ -530,7 +530,7 @@ class BlogVault {
 		if (extension_loaded('openssl')) {
 			$body['openssl'] = "1";
 		}
-		if (function_exists(is_ssl) && is_ssl()) {
+		if (function_exists('is_ssl') && is_ssl()) {
 			$body['https'] = "1";
 		}
 		$all_tables = $this->getAllTables();

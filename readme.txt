@@ -12,7 +12,8 @@ blogVault is the best wordpress backup plugin that offers real-time backups. It 
 
 == Description ==
 
-[blogVault](http://blogvault.net?bvsrc=wpplugin_readme) is a top-notch WordPress backup plugin that creates daily automatic backups of your WordPress site. Backup your entire site, including files and database, with this easy to use backup plugin. Top Features:
+[blogVault](http://blogvault.net?bvsrc=wpplugin_readme) is a top-notch WordPress backup plugin that creates daily automatic backups of your WordPress site. Backup your entire site, including files and database, with this easy to use backup plugin.
+
 **Top Features**:
 
 1. **Daily automatic backup** for your entire site content, including Posts, Pages, Plugin, Images, Comments, etc.

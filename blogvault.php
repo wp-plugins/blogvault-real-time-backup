@@ -42,6 +42,8 @@ if ( !function_exists('bvActivateHandler') ) :
 			$blogvault->updateOption('bvLastSendTime', time());
 			$blogvault->updateOption('bvLastRecvTime', 0);
 			$blogvault->activate();
+		} else {
+			$blogvault->updateOption('bvActivateRedirect', true);
 		}
 	}
 	register_activation_hook(__FILE__, 'bvActivateHandler');

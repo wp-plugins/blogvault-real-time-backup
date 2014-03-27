@@ -3,9 +3,10 @@ global $blogvault;
 global $bvNotice;
 $bvNotice = "";
 
-if (!function_exists('bvSetKeys')) :
-	function bvSetKeys() {
+if (!function_exists('bvAdminInitHandler')) :
+	function bvAdminInitHandler() {
 		global $bvNotice, $blogvault;
+
 		if (isset($_REQUEST['blogvaultkey'])) {
 			if (wp_verify_nonce($_REQUEST['bvnonce'] , "bvnonce") && (strlen($_REQUEST['blogvaultkey']) == 64)) {
 				$keys = str_split($_REQUEST['blogvaultkey'], 32);
@@ -21,8 +22,13 @@ if (!function_exists('bvSetKeys')) :
 				$bvNotice = "<b style='color:red;'>Invalid request!</b> Please try again with a valid key.<br/><br/>";
 			}
 		}
+
+		if ($blogvault->getOption('bvActivateRedirect')) {
+			$blogvault->updateOption('bvActivateRedirect', false);
+			wp_redirect( 'plugins.php?page=bv-key-config' );
+		}
 	}
-	add_action('init', 'bvSetKeys');
+	add_action('admin_init', 'bvAdminInitHandler');
 endif;
 
 if (!function_exists('bvAdminMenu')) :
@@ -172,48 +178,6 @@ if ( !function_exists('bvKeyConf') ) :
 <?php
 		}
 	}
-}
-endif;
-
-if ( !function_exists('bvPointerAdminScript')) :
-	function  bvPointerAdminScript() {
-		global $blogvault;
-		$seen_it = explode( ',', (string) get_user_meta( get_current_user_id(), 'dismissed_wp_pointers', true ) );
-		$do_add_script = false;
-		if ( !in_array('bvrtb', $seen_it) && strlen($blogvault->getOption('bvPublic')) == 0 ) {
-			$do_add_script = true;
-			add_action( 'admin_print_footer_scripts', 'bvPointerFooterScript' );
-		}
-		if ($do_add_script) {
-			wp_enqueue_style( 'wp-pointer' );
-			wp_enqueue_script( 'wp-pointer' );
-		}
-	}
-	add_action('admin_enqueue_scripts', 'bvPointerAdminScript');
-endif;
-
-if ( !function_exists('bvPointerFooterScript')) :
-function bvPointerFooterScript() {
-?>
-<script type="text/javascript">
-	jQuery(document).ready( function($) {
-		$('#bvAdminMenuLink').pointer({
-			content: '<h3>Activate blogVault Account</h3><p>Activate the blogVault account to backup your site. Use the following link to do so: <br/><br/><strong><a href="<?php echo admin_url('plugins.php?page=bv-key-config') ?>">Configure blogVault</a></strong></p>',
-			position: {
-				edge: 'left', // arrow direction
-				align: 'center' // vertical alignment
-			},
-			pointerWidth:	350,
-			close: function() {
-				$.post( ajaxurl, {
-					pointer: 'bvrtb',
-					action: 'dismiss-wp-pointer'
-				});
-			}
-		}).pointer('open');
-	});
-</script>
-<?php
 }
 endif;
 

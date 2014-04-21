@@ -1,9 +1,9 @@
 === blogVault Real-Time WordPress Backup ===
-Contributors: akshatc, singhsivam, shubhank_blogvault
+Contributors: akshatc, singhsivam
 Tags: backup, backup plugin, backups, wordpress backups, wordpress backup, wordpress backup plugin, database backup, complete backup, wp backup, automatic backup, backup wordpress, theme backup
 Donate link: http://blogvault.net
 Requires at least: 1.5
-Tested up to: 3.8
+Tested up to: 3.9
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html

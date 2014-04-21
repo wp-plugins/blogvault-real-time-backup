@@ -1,4 +1,4 @@
-=== blogVault Real-Time WordPress Backup ===
+=== Backup Plugin bv blogVault ===
 Contributors: akshatc, singhsivam
 Tags: backup, backup plugin, backups, wordpress backups, wordpress backup, wordpress backup plugin, database backup, complete backup, wp backup, automatic backup, backup wordpress, theme backup
 Donate link: http://blogvault.net
@@ -108,6 +108,10 @@ We maintain multiple back up of the data on our extremely secure and robust serv
 Yes. You can store a snapshot of your backup to your Dropbox account.
 
 == Changelog ==
+= 1.08 =
+* Changing the name to Backup Plugin by blogVault
+* Updating the tested WordPress version to 3.9
+
 = 1.06 =
 * Setting blogVault key now validates the nonce to prevent XSRF
 * Updating the plugin description with video introducing blogVault

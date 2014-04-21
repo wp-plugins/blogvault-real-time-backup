@@ -1,4 +1,4 @@
-=== Backup Plugin bv blogVault ===
+=== Backup Plugin by blogVault ===
 Contributors: akshatc, singhsivam
 Tags: backup, backup plugin, backups, wordpress backups, wordpress backup, wordpress backup plugin, database backup, complete backup, wp backup, automatic backup, backup wordpress, theme backup
 Donate link: http://blogvault.net

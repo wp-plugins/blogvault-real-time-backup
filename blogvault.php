@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: Backup Plugin bv blogVault
+Plugin Name: Backup Plugin by blogVault
 Plugin URI: http://blogvault.net/
 Description: Easiest way to backup your blog
 Author: akshat

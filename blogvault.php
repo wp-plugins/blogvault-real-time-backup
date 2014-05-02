@@ -5,7 +5,7 @@ Plugin URI: http://blogvault.net/
 Description: Easiest way to backup your blog
 Author: akshat
 Author URI: http://blogvault.net/
-Version: 1.08
+Version: 1.09
  */
 
 /*  Copyright YEAR  PLUGIN_AUTHOR_NAME  (email : PLUGIN AUTHOR EMAIL)
@@ -28,7 +28,7 @@ Version: 1.08
 global $bvVersion;
 global $blogvault;
 global $bvDynamicEvents;
-$bvVersion = '1.08';
+$bvVersion = '1.09';
 
 if (is_admin())
 	require_once dirname( __FILE__ ) . '/admin.php';
@@ -43,6 +43,8 @@ if ( !function_exists('bvActivateHandler') ) :
 			$blogvault->updateOption('bvLastRecvTime', 0);
 			$blogvault->activate();
 		} else {
+			$rand_secret = $blogvault->randString(32);
+			$blogvault->updateOption('bvSecretKey', $rand_secret);
 			$blogvault->updateOption('bvActivateRedirect', true);
 		}
 	}
@@ -311,6 +313,16 @@ class BlogVault {
 		return $baseurl.$method."?sig=".$sig."&bvTime=".$time."&bvPublic=".$public."&bvVersion=".$version;
 	}
 
+	function randString($length) {
+		$chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+		$size = strlen($chars);
+		for( $i = 0; $i < $length; $i++ ) {
+			$str .= $chars[rand(0, $size - 1)];
+		}
+		return $str;
+	}
+
 	function scanFiles($initdir = "./", $offset = 0, $limit = 0, $bsize = 512) {
 		$i = 0;
 		$j = 0;
@@ -516,7 +528,7 @@ class BlogVault {
 		global $bvVersion;
 		global $blogvault;
 		$body = array();
-		$body['wpurl'] = urlencode(get_bloginfo("wpurl"));
+		$body['wpurl'] = urlencode(network_site_url());
 		$body['abspath'] = urlencode(ABSPATH);
 		if (defined('DB_CHARSET'))
 			$body['dbcharset'] = urlencode(DB_CHARSET);
@@ -937,11 +949,6 @@ class BVDynamicBackup {
 		}
 		if ($should_ping)
 			$this->add_db_event('options', array('option_name' => $option_name));
-		 /*Step 2 -- If WordPress is about to kick off some "cron" action, we need to
-			 flush blogvault, because the "remote" cron threads done via  http 
-			 fetch will be happening completely inside the window of this thread.
-			 That thread will be expecting touched and accounted for tables.
-		  */
 		if ($option_name == '_transient_doing_cron')
 			$this->send_updates();
 		return $option_name;	

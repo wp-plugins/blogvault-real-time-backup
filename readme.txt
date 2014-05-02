@@ -123,6 +123,9 @@ We maintain multiple backups of the data on our extremely secure and robust serv
 Yes. You can store a snapshot of your backup to your Dropbox account.
 
 == Changelog ==
+= 1.09 =
+* When the plugin is activated but an blogVault Account is not created then the secret key is left empty. This is a security issue. Hence we will set a random value for the secret key when the plugin is installed.
+
 = 1.08 =
 * Changing the name to Backup Plugin by blogVault
 * Updating the tested WordPress version to 3.9

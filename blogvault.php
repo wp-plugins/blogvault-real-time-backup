@@ -761,7 +761,7 @@ class BVDynamicBackup {
 		$this->reset_events();
 	}
 
-	function &init() {
+	static public function &init() {
 		static $instance = false;
 		if (!$instance) {
 			$instance = new BVDynamicBackup();
@@ -1329,7 +1329,7 @@ if ((array_key_exists('apipage', $_REQUEST)) && stristr($_REQUEST['apipage'], 'b
 	}
 	if (array_key_exists('memset', $_REQUEST)) {
 		$val = intval(urldecode($_REQUEST['memset']));
-		ini_set('memory_limit', $val.'M');
+		@ini_set('memory_limit', $val.'M');
 	}
 	switch ($method) {
 	case "sendmanyfiles":

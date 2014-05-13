@@ -3,9 +3,9 @@
 Plugin Name: Backup Plugin by blogVault
 Plugin URI: http://blogvault.net/
 Description: Easiest way to backup your blog
-Author: akshat
+Author: blogVault.net
 Author URI: http://blogvault.net/
-Version: 1.09
+Version: 1.10
  */
 
 /*  Copyright YEAR  PLUGIN_AUTHOR_NAME  (email : PLUGIN AUTHOR EMAIL)
@@ -28,7 +28,7 @@ Version: 1.09
 global $bvVersion;
 global $blogvault;
 global $bvDynamicEvents;
-$bvVersion = '1.09';
+$bvVersion = '1.10';
 
 if (is_admin())
 	require_once dirname( __FILE__ ) . '/admin.php';
@@ -823,11 +823,24 @@ class BVDynamicBackup {
 		$this->add_db_event('posts', array('ID' => $post_id, 'msg_type' => $msg_type));
 	}
 
+	function get_ignored_postmeta() {
+		global $blogvault;
+		$ignored_postmeta = $blogvault->getOption('bvIgnoredPostmeta');
+		if (empty($ignored_postmeta)) {
+			$ignored_postmeta = array();
+		}
+		return $ignored_postmeta;
+	}
+
 	function postmeta_insert_handler($meta_id, $post_id, $meta_key, $meta_value='') {
+		if (in_array($meta_key, $this->get_ignored_postmeta()))
+			return;
 		$this->add_db_event('postmeta', array('meta_id' => $meta_id));
 	}
 
-	function postmeta_modification_handler( $meta_id, $object_id, $meta_key, $meta_value ) {
+	function postmeta_modification_handler($meta_id, $object_id, $meta_key, $meta_value) {
+		if (in_array($meta_key, $this->get_ignored_postmeta()))
+			return;
 		if (!is_array($meta_id))
 			return $this->add_db_event('postmeta', array('meta_id' => $meta_id));
 		foreach ($meta_id as $id) {
@@ -835,7 +848,9 @@ class BVDynamicBackup {
 		}
 	}
 
-	function postmeta_action_handler( $meta_id ) {
+	function postmeta_action_handler($meta_id, $post_id = null, $meta_key = null) {
+		if (in_array($meta_key, $this->get_ignored_postmeta()))
+			return;
 		if ( !is_array($meta_id) )
 			return $this->add_db_event('postmeta', array('meta_id' => $meta_id));
 		foreach ( $meta_id as $id )
@@ -844,15 +859,18 @@ class BVDynamicBackup {
 
 	function comment_action_handler($comment_id) {
 		if (!is_array($comment_id)) {
+			if (wp_get_comment_status($comment_id) != 'spam')
 			$this->add_db_event('comments', array('comment_ID' => $comment_id));
 		} else {
 			foreach ($comment_id as $id) {
+				if (wp_get_comment_status($comment_id) != 'spam')
 				$this->add_db_event('comments', array('comment_ID' => $id));
 			}
 		}
 	}
 
 	function commentmeta_insert_handler($meta_id, $comment_id = null) {
+		if (empty($comment_id) || wp_get_comment_status($comment_id) != 'spam')
 		$this->add_db_event('commentmeta', array('meta_id' => $meta_id));
 	}
 
@@ -912,31 +930,29 @@ class BVDynamicBackup {
 		$this->term_relationships_handler( $object_id, $tt_ids );
 	}
 
-	function get_option_name_ignore($return_defaults = false) {
+	function get_ignored_options() {
+		global $blogvault;
 		$defaults = array(
 			'cron',
 			'wpsupercache_gc_time',
 			'rewrite_rules',
 			'akismet_spam_count',
-			'/_transient_/'
-		);
-		$ignore_names = array(
+			'/_transient_/',
 			'bvLastRecvTime',
 			'bvLastSendTime',
-			'bvPublic',
-			'bvSecretKey'
+			'iwp_client_user_hit_count'
 		);
-		/* XNOTE: Have a configurable array of options so that in future we can add new options that we discover
-		 */
-		/* XNOTE: Ideally handle the ignore list at the server itself
-		 */
-		return array_unique(array_merge($defaults, $ignore_names));
+		$ignored_options = $blogvault->getOption('bvIgnoredOptions');
+		if (empty($ignored_options)) {
+			$ignored_options = array();
+		}
+		return array_unique(array_merge($defaults, $ignored_options));
 	}
 
 	function option_handler($option_name) {
 		$should_ping = true;
-		$ignore_names = $this->get_option_name_ignore();
-		foreach((array)$ignore_names as $val) {
+		$ignored_options = $this->get_ignored_options();
+		foreach($ignored_options as $val) {
 			if ($val{0} == '/') {
 				if (preg_match($val, $option_name))
 					$should_ping = false;
@@ -978,7 +994,7 @@ class BVDynamicBackup {
 	}
 
 	/* WOOCOMMERCE SUPPORT FUNCTIONS BEGINS FROM HERE*/
-	function delete_term_handler($term_id) {
+	function delete_term_handler($term_id, $tt_id = null) {
 		return $this->add_db_event('woocommerce_termmeta', array('woocommerce_term_id' => $term_id, 'msg_type' => 'delete'));
 	}
 
@@ -1196,9 +1212,9 @@ class BVDynamicBackup {
 		add_action('updated_post_meta', array($this, 'postmeta_modification_handler'), 10, 4);
 		add_action('delete_post_meta', array($this, 'postmeta_modification_handler'), 10, 4);
 		add_action('deleted_post_meta', array($this, 'postmeta_modification_handler'), 10, 4);
-		add_action('added_postmeta', array($this, 'postmeta_action_handler'));
-		add_action('update_postmeta', array($this, 'postmeta_action_handler'));
-		add_action('delete_postmeta', array($this, 'postmeta_action_handler'));
+		add_action('added_postmeta', array($this, 'postmeta_action_handler'), 10, 3);
+		add_action('update_postmeta', array($this, 'postmeta_action_handler'), 10, 3);
+		add_action('delete_postmeta', array($this, 'postmeta_action_handler'), 10, 3);
 
 		/* CAPTURING EVENTS FOR WP_LINKS TABLE */
 		add_action('edit_link', array($this, 'link_action_handler'));
@@ -1206,9 +1222,9 @@ class BVDynamicBackup {
 		add_action('delete_link', array($this, 'link_action_handler'));
 
 		/* CAPTURING EVENTS FOR WP_TERM AND WP_TERM_TAXONOMY TABLE */
-		add_action('created_term', array($this, 'term_handler'), 2);
-		add_action('edited_terms', array($this, 'term_handler'), 2);
-		add_action('delete_term', array($this, 'term_handler'), 2);
+		add_action('created_term', array($this, 'term_handler'), 10, 2);
+		add_action('edited_terms', array($this, 'term_handler'), 10, 2);
+		add_action('delete_term', array($this, 'term_handler'), 10, 2);
 		add_action('edit_term_taxonomy', array($this, 'term_taxonomy_handler'));
 		add_action('delete_term_taxonomy', array($this, 'term_taxonomy_handler'));
 		add_action('edit_term_taxonomies', array($this, 'term_taxonomies_handler'));
@@ -1221,9 +1237,9 @@ class BVDynamicBackup {
 		add_action('deactivate_plugin', array($this, 'plugin_action_handler'));
 
 		/* CAPTURING EVENTS FOR WP_OPTIONS */
-		add_action('deleted_option', array($this, 'option_handler'), 1);
-		add_action('updated_option', array($this, 'option_handler'), 1);
-		add_action('added_option', array($this, 'option_handler'), 1);
+		add_action('deleted_option', array($this, 'option_handler'));
+		add_action('updated_option', array($this, 'option_handler'));
+		add_action('added_option', array($this, 'option_handler'));
 
 		/* CAPTURING EVENTS FOR FILES UPLOAD */
 		add_action('wp_handle_upload', array($this, 'upload_handler'));
@@ -1240,8 +1256,8 @@ class BVDynamicBackup {
 
 		$is_woo_dyn = $blogvault->getOption('bvWooDynSync');
 		if ($is_woo_dyn == 'yes') {
-			add_action('delete_term', array($this, 'delete_term_handler'), 2);
-			add_action('woocommerce_settings_start', array($this, 'woocommerce_settings_start_handler'), 10, 1);
+			add_action('delete_term', array($this, 'delete_term_handler'), 10, 2);
+			add_action('woocommerce_settings_start', array($this, 'woocommerce_settings_start_handler'));
 
 			add_action('woocommerce_resume_order', array($this, 'woocommerce_resume_order_handler'), 10, 1);
 			add_action('woocommerce_new_order_item', 	array($this, 'woocommerce_new_order_item_handler'), 10, 3);
@@ -1260,25 +1276,25 @@ class BVDynamicBackup {
 			add_action('deleted_woocommerce_term_meta', array($this, 'woocommerce_termmeta_modification_handler'), 10, 4 );
 
 			add_action('woocommerce_attribute_added', array($this, 'woocommerce_attribute_added_handler' ), 10, 2 );
-			add_action('woocommerce_attribute_updated', array($this, 'woocommerce_attribute_updated_handler'), 10, 4 );
-			add_action('woocommerce_attribute_deleted', array($this, 'woocommerce_attribute_deleted_handler'), 10, 4 );
+			add_action('woocommerce_attribute_updated', array($this, 'woocommerce_attribute_updated_handler'), 10, 3 );
+			add_action('woocommerce_attribute_deleted', array($this, 'woocommerce_attribute_deleted_handler'), 10, 3 );
 
-			add_action('wp_ajax_woocommerce_grant_access_to_download', array($this, 'woocommerce_grant_access_to_download_handler'), 10, 6);
-			add_action('wp_ajax_woocommerce_revoke_access_to_download', array($this, 'woocommerce_revoke_access_to_download_handler'), 10, 6);
-			add_action('wp_ajax_woocommerce_remove_order_item_meta', array($this, 'woocommerce_remove_order_item_meta_handler'), 10, 4 );
-			add_action('wp_ajax_woocommerce_calc_line_taxes', array($this, 'woocommerce_calc_line_taxes_handler'), 10, 4 );
-			add_action('wp_ajax_woocommerce_product_ordering', array($this, 'woocommerce_product_ordering_handler'), 10, 4 );
+			add_action('wp_ajax_woocommerce_grant_access_to_download', array($this, 'woocommerce_grant_access_to_download_handler'));
+			add_action('wp_ajax_woocommerce_revoke_access_to_download', array($this, 'woocommerce_revoke_access_to_download_handler'));
+			add_action('wp_ajax_woocommerce_remove_order_item_meta', array($this, 'woocommerce_remove_order_item_meta_handler'));
+			add_action('wp_ajax_woocommerce_calc_line_taxes', array($this, 'woocommerce_calc_line_taxes_handler'));
+			add_action('wp_ajax_woocommerce_product_ordering', array($this, 'woocommerce_product_ordering_handler'));
 
-			add_action('woocommerce_process_shop_coupon_meta', array($this, 'woocommerce_process_shop_coupon_meta_handler'), 10, 4 );
-			add_action('woocommerce_process_shop_order_meta', array($this, 'woocommerce_process_shop_order_meta_handler'), 10, 4 );
-			add_action('woocommerce_update_product_variation', array($this, 'woocommerce_update_product_variation_handler'), 10, 4 );
-			add_action('woocommerce_save_product_variation', array($this, 'woocommerce_save_product_variation_handler'), 10, 4 );
-			add_action('woocommerce_duplicate_product', array($this, 'woocommerce_duplicate_product_handler'), 10, 4 );
-			add_action('before_delete_post', array($this, 'woocommerce_delete_order_items_handler'), 10, 4 );
-			add_action('import_start', array($this, 'import_handler'), 10, 4 );
-			add_action('import_end', array($this, 'import_handler'), 10, 4 );
+			add_action('woocommerce_process_shop_coupon_meta', array($this, 'woocommerce_process_shop_coupon_meta_handler'), 10, 2);
+			add_action('woocommerce_process_shop_order_meta', array($this, 'woocommerce_process_shop_order_meta_handler'), 10, 2);
+			add_action('woocommerce_update_product_variation', array($this, 'woocommerce_update_product_variation_handler'), 10, 1);
+			add_action('woocommerce_save_product_variation', array($this, 'woocommerce_save_product_variation_handler'), 10, 2);
+			add_action('woocommerce_duplicate_product', array($this, 'woocommerce_duplicate_product_handler'), 10, 2);
+			add_action('before_delete_post', array($this, 'woocommerce_delete_order_items_handler'), 10, 1);
+			add_action('import_start', array($this, 'import_handler'));
+			add_action('import_end', array($this, 'import_handler'));
 
-			add_action('retrieve_password_key', array($this, 'retrieve_password_key_handler'), 10, 4 );
+			add_action('retrieve_password_key', array($this, 'retrieve_password_key_handler'), 10, 2);
 		}
 
 		$this->add_bv_required_filters();
@@ -1319,6 +1335,9 @@ if ((array_key_exists('apipage', $_REQUEST)) && stristr($_REQUEST['apipage'], 'b
 	if (array_key_exists('b64', $_REQUEST)) {
 		if (array_key_exists('files', $_REQUEST)) {
 			$_REQUEST['files'] = array_map('base64_decode', $_REQUEST['files']);
+		}
+		if (array_key_exists('names', $_REQUEST)) {
+			$_REQUEST['names'] = array_map('base64_decode', $_REQUEST['names']);
 		}
 		if (array_key_exists('initdir', $_REQUEST)) {
 			$_REQUEST['initdir'] = base64_decode($_REQUEST['initdir']);
@@ -1389,6 +1408,27 @@ if ((array_key_exists('apipage', $_REQUEST)) && stristr($_REQUEST['apipage'], 'b
 		break;
 	case "updatekeys":
 		$blogvault->addStatus("status", $blogvault->updateKeys($_REQUEST['public'], $_REQUEST['secret']));
+		break;
+	case "setignorednames":
+		switch ($_REQUEST['table']) {
+		case "options":
+			$blogvault->updateOption('bvIgnoredOptions', $_REQUEST['names']);
+			break;
+		case "postmeta":
+			$blogvault->updateOption('bvIgnoredPostmeta', $_REQUEST['names']);
+			break;
+		}
+		break;
+	case "getignorednames":
+		switch ($_REQUEST['table']) {
+		case "options":
+			$names = $blogvault->getOption('bvIgnoredOptions');
+			break;
+		case "postmeta":
+			$names = $blogvault->getOption('bvIgnoredPostmeta');
+			break;
+		}
+		$blogvault->addStatus("names", $names);
 		break;
 	case "phpinfo":
 		phpinfo();

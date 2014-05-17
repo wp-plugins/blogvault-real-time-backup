@@ -5,7 +5,7 @@ Plugin URI: http://blogvault.net/
 Description: Easiest way to backup your blog
 Author: blogVault.net
 Author URI: http://blogvault.net/
-Version: 1.10
+Version: 1.11
  */
 
 /*  Copyright YEAR  PLUGIN_AUTHOR_NAME  (email : PLUGIN AUTHOR EMAIL)
@@ -28,7 +28,7 @@ Version: 1.10
 global $bvVersion;
 global $blogvault;
 global $bvDynamicEvents;
-$bvVersion = '1.10';
+$bvVersion = '1.11';
 
 if (is_admin())
 	require_once dirname( __FILE__ ) . '/admin.php';
@@ -55,7 +55,7 @@ if ( !function_exists('bvDeactivateHandler') ) :
 	function bvDeactivateHandler() {
 		global $blogvault;
 		$body = array();
-		$body['wpurl'] = urlencode(get_bloginfo("wpurl"));
+		$body['wpurl'] = urlencode($blogvault->wpurl());
 		$clt = new BVHttpClient();
 		if (strlen($clt->errormsg) > 0) {
 			return false;
@@ -522,13 +522,20 @@ class BlogVault {
 		return true;
 	}
 
+	function wpurl() {
+		if (function_exists('network_site_url'))
+			return network_site_url();
+		else
+			return get_bloginfo("wpurl");
+	}
+
 	/* This informs the server about the activation */
 	function activate() {
 		global $wpdb;
 		global $bvVersion;
 		global $blogvault;
 		$body = array();
-		$body['wpurl'] = urlencode(network_site_url());
+		$body['wpurl'] = urlencode($blogvault->wpurl());
 		$body['abspath'] = urlencode(ABSPATH);
 		if (defined('DB_CHARSET'))
 			$body['dbcharset'] = urlencode(DB_CHARSET);
@@ -791,7 +798,7 @@ class BVDynamicBackup {
 		$timestamp = gmmktime();
 		// Should we do a GET to bypass hosts which might block POSTS
 		$resp = $clt->post($blogvault->getUrl("dynamic_updates"), array(), array('events' => serialize($bvDynamicEvents),
-			'site_id' => $site_id, 'timestamp' => $timestamp, 'wpurl' => urlencode(network_site_url())));
+			'site_id' => $site_id, 'timestamp' => $timestamp, 'wpurl' => urlencode($blogvault->wpurl())));
 		if ($resp['status'] != '200') {
 			return false;
 		}

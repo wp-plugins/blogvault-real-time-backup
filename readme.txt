@@ -140,6 +140,9 @@ Yes, you can change your backup plan at anytime right from the blogVault dashboa
 You can update the blogVault Backup Plugin from within the WordPress Admin Panel itself. We have published the backup plugin in the WordPress Repository. We regularly update our backup plugin. Alternatively you can update the plugin from the blogVault Dashboard too.
 
 == Changelog ==
+= 1.11 =
+* Making the backup plugin compatible with older versions of WordPress. network_site_url was not available in WP versions older than 3.0. For older versions we use get_bloginfo("wpurl").
+
 = 1.10 =
 * Ability to not do dynamic backups for updates to certain changes to the options table.
 * Additional options which need to be blocked for dynamic backups can be sent from the server.

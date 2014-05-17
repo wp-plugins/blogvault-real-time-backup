@@ -96,7 +96,7 @@ if ( !function_exists('bvKeyConf') ) :
 		} else {
 ?>
 			<div style="display:none">
-				<a href='http://blogvault.net?bvsrc=bvplugin&wpurl=<?php echo urlencode(network_site_url()) ?>'> Click here </a> to get your blogVault Key.</font>
+				<a href='http://blogvault.net?bvsrc=bvplugin&wpurl=<?php echo urlencode($blogvault->wpurl()) ?>'> Click here </a> to get your blogVault Key.</font>
 				<form method='post'> 
 					<font size='3'>Enter blogVault Key:</font> <input type='text' name='blogvaultkey' size='65'>
 					<input type='hidden' name='bvnonce' value='<?php echo wp_create_nonce("bvnonce") ?>'>
@@ -111,12 +111,12 @@ if ( !function_exists('bvKeyConf') ) :
 ?>
 			<div>
 				<div style="display:block;padding-bottom:1%;"><font size="3">Create a blogVault Account!</font></div>
-				<span style="color:grey;padding:1% 2.5% 0 2.5%;">All plans(<a href="http://blogvault.net/pricing?bvsrc=wpplugin&wpurl=<?php echo urlencode(network_site_url()) ?>">See Pricing</a>) come with free 1 week trial.</span>
+				<span style="color:grey;padding:1% 2.5% 0 2.5%;">All plans(<a href="http://blogvault.net/pricing?bvsrc=wpplugin&wpurl=<?php echo urlencode($blogvault->wpurl()) ?>">See Pricing</a>) come with free 1 week trial.</span>
 			</div>
 
 			<form action="https://webapp.blogvault.net/home/api_signup" style="padding:0 2% 2em 1%;" method="post" name="signup">
 				<input type="hidden" name="bvsrc" value="wpplugin" />
-				<input type="hidden" name="url" value="<?php echo network_site_url(); ?>" />
+				<input type="hidden" name="url" value="<?php echo $blogvault->wpurl(); ?>" />
 				<input type='hidden' name='bvnonce' value='<?php echo wp_create_nonce("bvnonce") ?>'>
 <?php if ($_error == "email") { ?>
 				<div style="color:red; font-weight: bold;" align="right">There is already an account with this email.</div>
@@ -172,7 +172,7 @@ if ( !function_exists('bvKeyConf') ) :
 			</div>
 			<form action="https://webapp.blogvault.net/home/api_signin" style="padding:0 2% 2em 1%;" method="post" name="signin">
 				<input type="hidden" name="bvsrc" value="wpplugin" />
-				<input type="hidden" name="url" value="<?php echo network_site_url(); ?>">
+				<input type="hidden" name="url" value="<?php echo $blogvault->wpurl(); ?>">
 				<input type='hidden' name='bvnonce' value='<?php echo wp_create_nonce("bvnonce") ?>'>
 <?php if ($_error == "user") { ?>
 				<div style="color:red; font-weight: bold;">Incorrect Username or Password</div>
@@ -193,7 +193,7 @@ if ( !function_exists('bvKeyConf') ) :
 					</tr>
 					<tr>
 						<td></td>
-						<td align="right"><a href="https://webapp.blogvault.net/password_resets/new?bvsrc=wpplugin&wpurl=<?php echo urlencode(network_site_url()) ?>" target="_blank">Forgot Password</a></td>
+						<td align="right"><a href="https://webapp.blogvault.net/password_resets/new?bvsrc=wpplugin&wpurl=<?php echo urlencode($blogvault->wpurl()) ?>" target="_blank">Forgot Password</a></td>
 					</tr>
 					<tr>
 						<td></td>

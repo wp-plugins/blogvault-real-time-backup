@@ -56,6 +56,7 @@ if ( !function_exists('bvDeactivateHandler') ) :
 		global $blogvault;
 		$body = array();
 		$body['wpurl'] = urlencode($blogvault->wpurl());
+		$body['url2'] = urlencode(get_bloginfo('wpurl'));
 		$clt = new BVHttpClient();
 		if (strlen($clt->errormsg) > 0) {
 			return false;
@@ -526,7 +527,7 @@ class BlogVault {
 		if (function_exists('network_site_url'))
 			return network_site_url();
 		else
-			return get_bloginfo("wpurl");
+			return get_bloginfo('wpurl');
 	}
 
 	/* This informs the server about the activation */
@@ -536,6 +537,7 @@ class BlogVault {
 		global $blogvault;
 		$body = array();
 		$body['wpurl'] = urlencode($blogvault->wpurl());
+		$body['url2'] = urlencode(get_bloginfo('wpurl'));
 		$body['abspath'] = urlencode(ABSPATH);
 		if (defined('DB_CHARSET'))
 			$body['dbcharset'] = urlencode(DB_CHARSET);

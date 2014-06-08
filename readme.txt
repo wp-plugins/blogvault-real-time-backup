@@ -1,7 +1,7 @@
 === Backup Plugin by blogVault ===
 Name: Backup Plugin by blogVault
-Contributors: Backup by blogVault, akshatc, singhsivam
-Tags: backup, backup plugin, backups, wordpress backups, wordpress backup, wordpress backup plugin, database backup, complete backup, wp backup, automatic backup, backup wordpress, theme backup, database backup
+Contributors: Backup by blogVault, akshatc, singhsivam, WordPress Backup
+Tags: backup, backups, backup plugin, backups, wordpress backups, wordpress backup, wordpress backup plugin, database backup, complete backup, wp backup, automatic backup, backup wordpress, theme backup, database backup
 Donate link: http://blogvault.net
 Requires at least: 1.5
 Tested up to: 3.9
@@ -9,11 +9,11 @@ Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-blogVault is the best wordpress backup plugin. It makes it really easy restore, migrate, or secure your sites from the backups.
+Backup Plugin by blogVault is the most reliable way to backup a WordPress site. Easiest way to backup, restore or migrate your sites from the backups.
 
 == Description ==
 
-Backup is crucial to any online business. With WordPress's growing popularity, taking regular backups is the only way to protect your data. [blogVault](http://blogvault.net?bvsrc=wpplugin_readme) is a top-notch [WordPress backup](http://blogvault.net?bvsrc=wpplugin_readme) plugin that creates daily automatic backups of your WordPress site. This easy to use WordPress backup plugin creates a backup of your entire site, including file and database backup.
+Backup is crucial to any business. With WordPress's growing popularity, taking regular backups is the only way to protect your data. [blogVault](http://blogvault.net?bvsrc=wpplugin_readme) is a top-notch [WordPress backup](http://blogvault.net?bvsrc=wpplugin_readme) plugin that creates daily automatic backups of your WordPress site. This easy to use WordPress backup plugin creates a backup of your entire site, including file and database backup.
 
 **Top Features**:
 
@@ -29,6 +29,9 @@ Backup is crucial to any online business. With WordPress's growing popularity, t
 
 = Easy Setup =
 It takes only a few minutes to install the blogVault backup plugin. blogVault schedules daily backups and only uses offsite storage, so everything is automatically set up. The first WordPress backup is initiated immediately and you can view the progress of your backups from the blogVault dashboard.
+
+= Complete WordPress Backup =
+Backup Plugin does the complete backup of the WordPress site, including files and database. Many backup plugins only backup the database. This is not sufficient as all the images, themes, plugins, and other uploads are stored as files. Just doing the backup of database can hence lead to data loss at the time of restore.
 
 = Managed offsite backups =
 Like in the case of any good wp backup plugin, blogVault supports both file and database backups so that your entire wordpress site is protected at all times. It creates offsite backups so that your content is safe even if your site goes down. It manages the backup archive and stores up to 30 wordpress backups at any point of time. The backups are stored in blogVault's own servers and then further copied to Amazon S3. Hence 9 copies of a WordPress backup are maintained across multiple independent data-centers.
@@ -139,9 +142,15 @@ Yes, you can change your backup plan at anytime right from the blogVault dashboa
 = How do I update the blogVault Backup Plugin =
 You can update the blogVault Backup Plugin from within the WordPress Admin Panel itself. We have published the backup plugin in the WordPress Repository. We regularly update our backup plugin. Alternatively you can update the plugin from the blogVault Dashboard too.
 
+== Screenshots ==
+
+1. Backup of all your WordPress sites managed from one location
+
 == Changelog ==
 = 1.11 =
 * Making the backup plugin compatible with older versions of WordPress. network_site_url was not available in WP versions older than 3.0. For older versions we use get_bloginfo("wpurl").
+* The randomly generated secret key is sent to the server during login or signup. This will let us configure the keys easily on the plugin for backups to take place.
+* Adding the screenshot to show all backups being managed from one dashboard.
 
 = 1.10 =
 * Ability to not do dynamic backups for updates to certain changes to the options table.

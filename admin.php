@@ -117,6 +117,7 @@ if ( !function_exists('bvKeyConf') ) :
 			<form action="https://webapp.blogvault.net/home/api_signup" style="padding:0 2% 2em 1%;" method="post" name="signup">
 				<input type="hidden" name="bvsrc" value="wpplugin" />
 				<input type="hidden" name="url" value="<?php echo $blogvault->wpurl(); ?>" />
+				<input type="hidden" name="secret" value="<?php echo $blogvault->getOption('bvSecretKey'); ?>">
 				<input type='hidden' name='bvnonce' value='<?php echo wp_create_nonce("bvnonce") ?>'>
 <?php if ($_error == "email") { ?>
 				<div style="color:red; font-weight: bold;" align="right">There is already an account with this email.</div>
@@ -173,6 +174,7 @@ if ( !function_exists('bvKeyConf') ) :
 			<form action="https://webapp.blogvault.net/home/api_signin" style="padding:0 2% 2em 1%;" method="post" name="signin">
 				<input type="hidden" name="bvsrc" value="wpplugin" />
 				<input type="hidden" name="url" value="<?php echo $blogvault->wpurl(); ?>">
+				<input type="hidden" name="secret" value="<?php echo $blogvault->getOption('bvSecretKey'); ?>">
 				<input type='hidden' name='bvnonce' value='<?php echo wp_create_nonce("bvnonce") ?>'>
 <?php if ($_error == "user") { ?>
 				<div style="color:red; font-weight: bold;">Incorrect Username or Password</div>

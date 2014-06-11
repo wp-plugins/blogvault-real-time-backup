@@ -5,7 +5,7 @@ Plugin URI: http://blogvault.net/
 Description: Easiest way to backup your blog
 Author: blogVault.net
 Author URI: http://blogvault.net/
-Version: 1.11
+Version: 1.12
  */
 
 /*  Copyright YEAR  PLUGIN_AUTHOR_NAME  (email : PLUGIN AUTHOR EMAIL)
@@ -28,7 +28,7 @@ Version: 1.11
 global $bvVersion;
 global $blogvault;
 global $bvDynamicEvents;
-$bvVersion = '1.11';
+$bvVersion = '1.12';
 
 if (is_admin())
 	require_once dirname( __FILE__ ) . '/admin.php';

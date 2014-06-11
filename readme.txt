@@ -4,7 +4,7 @@ Contributors: Backup by blogVault, akshatc, singhsivam, WordPress Backup
 Tags: backup, backups, backup plugin, backups, wordpress backups, wordpress backup, wordpress backup plugin, database backup, complete backup, wp backup, automatic backup, backup wordpress, theme backup, database backup
 Donate link: http://blogvault.net
 Requires at least: 1.5
-Tested up to: 3.9
+Tested up to: 3.9.1
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -13,25 +13,29 @@ Backup Plugin by blogVault is the most reliable way to backup a WordPress site. 
 
 == Description ==
 
-Backup is crucial to any business. With WordPress's growing popularity, taking regular backups is the only way to protect your data. [blogVault](http://blogvault.net?bvsrc=wpplugin_readme) is a top-notch [WordPress backup](http://blogvault.net?bvsrc=wpplugin_readme) plugin that creates daily automatic backups of your WordPress site. This easy to use WordPress backup plugin creates a backup of your entire site, including file and database backup.
+Backup is crucial to any business. Regular backup protects your data. [blogVault](http://blogvault.net?bvsrc=backup-plugin-readme) is a top-notch [WordPress backup](http://blogvault.net?bvsrc=backup-plugin-readme) plugin that creates daily automatic backups of your WordPress site. Backup plugin does complete WordPress backup including files and database backup.
 
-**Top Features**:
+Top Features:
 
-1. **Daily automatic backups** for your entire site content, including Posts, Pages, Plugin, Images, Comments, etc.
-
-2. Supports the 3 pillars that make a good Wordpress Backup Plugin - backup, restore, and migration
-
-3. Maintains **multiple copies** of backups on its own as well as Amazon S3 servers
-
-4. **Real-time backup** so that no data is ever lost.
-
-5. Upload any chosen version of your WordPress backup to your Dropbox account using the **Upload to Dropbox** feature
+* Daily Automatic Backup
+* Real-time WordPress Backup
+* Complete WordPress Backup - files backup and database backup
+* WordPress Backup to Dropbox
+* 30 day Backup history
+* Easy restore from backup
+* Easy migration from backup
+* Managed offsite backup
+* Incremental backups
+* Encrypted and Secure Backups
+* World class support
+* Single dashboard to manage all backups
+* Free Plan with Weekly backups
 
 = Easy Setup =
 It takes only a few minutes to install the blogVault backup plugin. blogVault schedules daily backups and only uses offsite storage, so everything is automatically set up. The first WordPress backup is initiated immediately and you can view the progress of your backups from the blogVault dashboard.
 
 = Complete WordPress Backup =
-Backup Plugin does the complete backup of the WordPress site, including files and database. Many backup plugins only backup the database. This is not sufficient as all the images, themes, plugins, and other uploads are stored as files. Just doing the backup of database can hence lead to data loss at the time of restore.
+Backup Plugin does the complete backup of the WordPress site, including files and database. Many backup plugins only backup the database. This is not sufficient as all the images, themes, plugins, and other uploads are stored as files. Just doing the backup of database can hence lead to data loss at the time of restore. The backup plugin saves your complete WordPress site content including Posts, Pages, Plugin, Images, Comments, etc.
 
 = Managed offsite backups =
 Like in the case of any good wp backup plugin, blogVault supports both file and database backups so that your entire wordpress site is protected at all times. It creates offsite backups so that your content is safe even if your site goes down. It manages the backup archive and stores up to 30 wordpress backups at any point of time. The backups are stored in blogVault's own servers and then further copied to Amazon S3. Hence 9 copies of a WordPress backup are maintained across multiple independent data-centers.
@@ -100,7 +104,7 @@ The backup plugin can also be installed manually by downloading it from the Word
 * Supports incremental backup for large sites spanning many GBs
 * E-mail/ Chat support to solve customer issues quickly
 
-For a detailed comparison between blogVault and other popular backup plugins such as VaultPress, BackupBuddy, UpdraftPlus, myRepono and BackWPup, [click here](http://blogvault.net/comparison-between-popular-wordpress-backup-plugins/?bvsrc=wpplugin_readme).
+For a detailed comparison between blogVault and other popular backup plugins such as VaultPress, BackupBuddy, UpdraftPlus, myRepono and BackWPup, [click here](http://blogvault.net/comparison-between-popular-wordpress-backup-plugins/?bvsrc=backup-plugin-readme).
 
 The above are just a few points; we support everything that you can think of doing with your backup and then some more!
 
@@ -131,10 +135,10 @@ Yes. We support on demand backup apart from the regular scheduled backups.
 = Can I use blogVault to backup multiple sites? =
 Yes. We have different backup plans for different needs. We will let you manage all the backups from a single dashboard. You can migrate, restore or download the backups for all your sites from the blogVault dashboard. Even if your sites go down, you can restore the backup. This makes the backup completely independent of your site.
 
-Additional licenses for backups are available at a lower price. Please visit our [Plans and Pricing page](http://blogvault.net/pricing/?bvsrc=wpplugin_readme) for all the details.
+Additional licenses for backups are available at a lower price. Please visit our [Plans and Pricing page](http://blogvault.net/pricing/?bvsrc=backup-plugin-readme) for all the details.
 
 = Do you have any Unlimited Backup plans =
-Yes. We have 3 great developer plans which let you backup as many sites as you like without worrying about licenses. You can learn more about these backup plans at [Unlimited WordPress Backup Plans](http://blogvault.net/unlimited-plans/?bvsrc=wpplugin_readme)
+Yes. We have 3 great developer plans which let you backup as many sites as you like without worrying about licenses. You can learn more about these backup plans at [Unlimited WordPress Backup Plans](http://blogvault.net/unlimited-plans/?bvsrc=backup-plugin-readme)
 
 = Can I change my backup plan? =
 Yes, you can change your backup plan at anytime right from the blogVault dashboard.
@@ -147,6 +151,11 @@ You can update the blogVault Backup Plugin from within the WordPress Admin Panel
 1. Backup of all your WordPress sites managed from one location
 
 == Changelog ==
+= 1.12 =
+* Introducing the free weekly backup plan
+* Show the ad for the free backup plan in the sidebar
+* Changing default backup plans to pay for year in advance
+
 = 1.11 =
 * Making the backup plugin compatible with older versions of WordPress. network_site_url was not available in WP versions older than 3.0. For older versions we use get_bloginfo("wpurl").
 * The randomly generated secret key is sent to the server during login or signup. This will let us configure the keys easily on the plugin for backups to take place.

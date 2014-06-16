@@ -1,11 +1,11 @@
 <?php
 /*
-Plugin Name: Backup Plugin by blogVault
+Plugin Name: Backup by blogVault
 Plugin URI: http://blogvault.net/
 Description: Easiest way to backup your blog
 Author: blogVault.net
 Author URI: http://blogvault.net/
-Version: 1.12
+Version: 1.13
  */
 
 /*  Copyright YEAR  PLUGIN_AUTHOR_NAME  (email : PLUGIN AUTHOR EMAIL)
@@ -28,7 +28,7 @@ Version: 1.12
 global $bvVersion;
 global $blogvault;
 global $bvDynamicEvents;
-$bvVersion = '1.12';
+$bvVersion = '1.13';
 
 if (is_admin())
 	require_once dirname( __FILE__ ) . '/admin.php';
@@ -901,8 +901,16 @@ class BVDynamicBackup {
 		$this->add_db_event('users', array('ID' => $userid));
 	}
 
-	function usermeta_action_handler($umeta_id, $user_id, $meta_key, $meta_value='') {
+	function usermeta_insert_handler($umeta_id, $user_id = null) {
 		$this->add_db_event('usermeta', array('umeta_id' => $umeta_id));
+	}
+
+	function usermeta_modification_handler($umeta_id, $object_id, $meta_key, $meta_value = '') {
+		if (!is_array($umeta_id))
+			return $this->add_db_event('usermeta', array('umeta_id' => $umeta_id));
+		foreach ($umeta_id as $id) {
+			$this->add_db_event('usermeta', array('umeta_id' => $id));
+		}
 	}
 
 	function link_action_handler($link_id) {
@@ -1192,9 +1200,17 @@ class BVDynamicBackup {
 		add_action('edit_comment', array($this, 'comment_action_handler'));
 
 		/* CAPTURING EVENTS FOR WP_COMMENTMETA TABLE */
-		add_action('added_comment_meta', array($this, 'commentmeta_insert_handler' ), 10, 2 );
-		add_action('updated_comment_meta', array($this, 'commentmeta_modification_handler' ), 10, 4 );
-		add_action('deleted_comment_meta', array($this, 'commentmeta_modification_handler' ), 10, 4 );
+		add_action('added_comment_meta', array($this, 'commentmeta_insert_handler' ), 10, 2);
+		add_action('updated_comment_meta', array($this, 'commentmeta_modification_handler'), 10, 4);
+		add_action('deleted_comment_meta', array($this, 'commentmeta_modification_handler'), 10, 4);
+
+		/* CAPTURING EVENTS FOR WP_USERMETA TABLE */
+		add_action('added_user_meta', array($this, 'usermeta_insert_handler' ), 10, 2);
+		add_action('updated_user_meta', array($this, 'usermeta_modification_handler' ), 10, 4);
+		add_action('deleted_user_meta', array($this, 'usermeta_modification_handler' ), 10, 4);
+		add_action('added_usermeta',  array( $this, 'usermeta_modification_handler'), 10, 4);
+		add_action('update_usermeta', array( $this, 'usermeta_modification_handler'), 10, 4);
+		add_action('delete_usermeta', array( $this, 'usermeta_modification_handler'), 10, 4);
 
 		add_action('user_register', array($this, 'userid_action_handler'));
 		add_action('password_reset', array($this, 'userid_action_handler'));

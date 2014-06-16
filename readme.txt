@@ -1,7 +1,7 @@
-=== Backup Plugin by blogVault ===
-Name: Backup Plugin by blogVault
-Contributors: Backup by blogVault, akshatc, singhsivam, WordPress Backup
-Tags: backup, backups, backup plugin, backups, wordpress backups, wordpress backup, wordpress backup plugin, database backup, complete backup, wp backup, automatic backup, backup wordpress, theme backup, database backup
+=== Backup by blogVault ===
+Name: Backup by blogVault
+Contributors: Backup by blogVault, akshatc, singhsivam
+Tags: backup, wordpress backup, database backup, complete backup, wp backup, website backup, blogvault
 Donate link: http://blogvault.net
 Requires at least: 1.5
 Tested up to: 3.9.1
@@ -9,7 +9,7 @@ Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Backup Plugin by blogVault is the most reliable way to backup a WordPress site. Easiest way to backup, restore or migrate your sites from the backups.
+Backup by blogVault is the most reliable way to backup a WordPress site. It is the easiest way to backup, restore or migrate your sites.
 
 == Description ==
 
@@ -35,11 +35,11 @@ Top Features:
 It takes only a few minutes to install the blogVault backup plugin. blogVault schedules daily backups and only uses offsite storage, so everything is automatically set up. The first WordPress backup is initiated immediately and you can view the progress of your backups from the blogVault dashboard.
 
 = Complete WordPress Backup =
-Backup Plugin does the complete backup of the WordPress site, including files and database. Many backup plugins only backup the database. This is not sufficient as all the images, themes, plugins, and other uploads are stored as files. Just doing the backup of database can hence lead to data loss at the time of restore. The backup plugin saves your complete WordPress site content including Posts, Pages, Plugin, Images, Comments, etc.
+Backup Plugin does the complete backup of the WordPress site, including files and database. Many backup plugins only backup the database. This is not sufficient as all the images, themes, plugins, and other uploads are stored as files. Just doing the backup of database can hence lead to data loss at the time of restore. blogVault saves your complete WordPress site content including Posts, Pages, Plugin, Images, Comments, etc.
 
 = Managed offsite backups =
-Like in the case of any good wp backup plugin, blogVault supports both file and database backups so that your entire wordpress site is protected at all times. It creates offsite backups so that your content is safe even if your site goes down. It manages the backup archive and stores up to 30 wordpress backups at any point of time. The backups are stored in blogVault's own servers and then further copied to Amazon S3. Hence 9 copies of a WordPress backup are maintained across multiple independent data-centers.
-Many regular backup plugins store backups locally on the server. This puts additional load on the server and slows your site down. Not only that, this backup technique can quickly eat up all your server storage space if you have a limited storage plan. The blogVault backup plugin doesn’t use any local storage for your WordPress backups. Lastly, local backups are as good as no backups at all. If the server crashes then you will lose the WordPress site and the backups too.
+Like in the case of any good wp backup plugin, blogVault creates offsite backups so that your content is safe even if your site goes down. It manages the backup archive and stores up to 30 wordpress backups at any point of time. The backups are stored in blogVault's own servers and then further copied to Amazon S3. Hence 9 copies of a WordPress backup are maintained across multiple independent data-centers.
+Most other backup plugins store backups locally on the server. This puts additional load on the server and slows your site down. Not only that, this backup technique can quickly eat up all your server storage space if you have a limited storage plan. The blogVault backup plugin doesn’t use any local storage for your WordPress backups. Lastly, local backups are as good as no backups at all. If the server crashes then you will lose the WordPress site and the backups too.
 
 = Easy Restore of Backups =
 If your site gets hacked, blogVault's easy restore feature helps you get back on your feet swiftly. It automatically restores a specific WordPress backup onto the server.
@@ -151,6 +151,9 @@ You can update the blogVault Backup Plugin from within the WordPress Admin Panel
 1. Backup of all your WordPress sites managed from one location
 
 == Changelog ==
+= 1.13 =
+* Adding events for the dynamic backup of the usermeta table
+
 = 1.12 =
 * Introducing the free weekly backup plan
 * Show the ad for the free backup plan in the sidebar

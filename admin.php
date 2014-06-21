@@ -6,20 +6,40 @@ $bvNotice = "";
 if (!function_exists('bvAdminInitHandler')) :
 	function bvAdminInitHandler() {
 		global $bvNotice, $blogvault;
+		global $sidebars_widgets;
+		global $wp_registered_widget_updates;
 
-		if (isset($_REQUEST['blogvaultkey'])) {
-			if (wp_verify_nonce($_REQUEST['bvnonce'] , "bvnonce") && (strlen($_REQUEST['blogvaultkey']) == 64)) {
-				$keys = str_split($_REQUEST['blogvaultkey'], 32);
-				$blogvault->updatekeys($keys[0], $keys[1]);
-				bvActivateHandler();
-				$bvNotice = "<b>Activated!</b> blogVault is now backing up your site.<br/><br/>";
-				if (isset($_REQUEST['redirect'])) {
-					$location = $_REQUEST['redirect'];
-					wp_redirect("https://webapp.blogvault.net/dash/redir?q=".urlencode($location));
-					exit();
+		if (isset($_REQUEST['bvnonce']) && wp_verify_nonce($_REQUEST['bvnonce'], "bvnonce")) {
+			$badge_location = $_REQUEST['insert_badge'];
+			if (isset($badge_location) && is_array($sidebars_widgets[$badge_location])) {
+				$control = $wp_registered_widget_updates['text'];
+				$widget = $control['callback'][0];
+				$multi_number = $widget->number + 1;
+				$instance = array("title" => "WordPress Backup", "text" => '<a href="http://blogvault.net?src=wpbadge"><img src="//s3.amazonaws.com/bvimgs/wordpress_backup_bbd1.png" alt="WordPress Backup" /></a>');
+				$_POST['widget-text'] = array($multi_number => $instance);
+				$_POST['multi_number'] = $multi_number;
+				$_POST['id_base'] = 'text';
+				call_user_func_array($control['callback'], $control['params']);
+				$sidebars_widgets[$badge_location][] = 'text-'.$multi_number;
+				wp_set_sidebars_widgets($sidebars_widgets);
+			} elseif ($badge_location == "bvfooter") {
+				$blogvault->updateOption('bvBadgeInFooter', 'yes');
+			}
+
+			if (isset($_REQUEST['blogvaultkey'])) {
+				if ((strlen($_REQUEST['blogvaultkey']) == 64)) {
+					$keys = str_split($_REQUEST['blogvaultkey'], 32);
+					$blogvault->updatekeys($keys[0], $keys[1]);
+					bvActivateHandler();
+					$bvNotice = "<b>Activated!</b> blogVault is now backing up your site.<br/><br/>";
+					if (isset($_REQUEST['redirect'])) {
+						$location = $_REQUEST['redirect'];
+						wp_redirect("https://webapp.blogvault.net/dash/redir?q=".urlencode($location));
+						exit();
+					}
+				} else {
+					$bvNotice = "<b style='color:red;'>Invalid request!</b> Please try again with a valid key.<br/><br/>";
 				}
-			} else {
-				$bvNotice = "<b style='color:red;'>Invalid request!</b> Please try again with a valid key.<br/><br/>";
 			}
 		}
 
@@ -102,22 +122,12 @@ if ( !function_exists('bvKeyConf') ) :
 <!-- form wrapper starts here-->
 <div style="display:table;table-layout:fixed;width:100%;max-width:40%;float:left;padding:1% 2.5% 2em 2.5%;overflow:hidden;border: 1px solid #ebebeb;" id="form_wrapper">
 <?php if (!isset($_REQUEST['signin'])) { ?>
-	<!-- Signup form starts here -->
+			<!-- Signup form starts here -->
 			<div>
-<?php 	if (isset($_REQUEST['free'])) { ?>
-					<!-- blogVault Badge Code -->
-					<h2>Step 1:<span style="color: gray;">&nbsp;Add the blogVault Badge to your homepage</span></h2>
-					<div style="background-color: #eff2f7; -webkit-border-radius: 10px; -moz-border-radius: 10px; border-radius: 10px; width: 80%; padding: 5px 27px 5px 27px; margin-bottom: 40px;">
-						<span style="color: #70798f;">Copy the following code to your site</span>
-						
-						<div style='width: 100%; padding: 5px; margin: 8px 0 8px; background-color: #fff; border-radius: 3px; font-size: 13px; overflow-x: auto; word-wrap: break-word;'>&lt;a href="http://blogvault.net?src=wpbadge"&gt;&lt;img src="//s3.amazonaws.com/bvimgs/bv_badge_dark_1.png" alt="WordPress Backup" /&gt;&lt;/a&gt;</div>
-						<a href="http://blogvault.net?src=wpbadge"><img src="//s3.amazonaws.com/bvimgs/bv_badge_dark_1.png" alt="Mobile Analytics" /></a>
-					</div>
-					<h2>Step 2:<span style="color: gray;">&nbsp;Create a free blogVault Account</span></h2>
-<?php 	} else { ?>
-				<div style="display:block;padding-bottom:1%;"><font size="3">Create a blogVault Account!</font></div>
+				<h2><div style="display:block;padding-bottom:1%;">Create a blogVault Account!</div></h2>
+<?php if (!isset($_REQUEST['free'])) { ?>
 				<span style="color:grey;padding:1% 2.5% 0 2.5%;">All plans(<a href="http://blogvault.net/pricing?bvsrc=wpplugin&wpurl=<?php echo urlencode($blogvault->wpurl()) ?>">See Pricing</a>) come with free 1 week trial.</span>
-<?php 	} ?>
+<?php } ?>
 			</div>
 
 			<form action="https://webapp.blogvault.net/home/api_signup" style="padding:0 2% 2em 1%;" method="post" name="signup">
@@ -132,7 +142,7 @@ if ( !function_exists('bvKeyConf') ) :
 <?php } else if ($_error == "blog") { ?>
 				<div style="color:red; font-weight: bold;" align="right">Could not add the site. Please contact <a href="http://blogvault.net/contact/">blogVault Support</a></div>
 <?php } ?>
-				<table style="border-spacing:10px 10px;">
+				<table style="border-spacing:0px 10px;">
 					<tr>
 						<td><label id='label_email'<?php if ($_error == "email") echo 'style="color:red;"'; ?>><strong>Email</strong></label></td>
 						<td><input type="text" id="email" name="email" value="<?php echo get_option('admin_email');?>"></td>
@@ -148,7 +158,7 @@ if ( !function_exists('bvKeyConf') ) :
 						<td><input type="password" name="password_confirmation" id="confirm_password"></td>
 					</tr>
 					<tr>
-					<td><label><strong>Plan</strong></label></td>
+						<td><label><strong>Plan</strong></label></td>
 						<td>
 <?php 	if (isset($_REQUEST['free'])) { ?>
 							<strong>FREE OFFER</strong>
@@ -163,11 +173,49 @@ if ( !function_exists('bvKeyConf') ) :
 <?php 	} ?>
 						</td>
 					</tr>
+
+<!-- Option to insert the blogVault badge -->
+<?php if (isset($_REQUEST['free'])) { ?>
+					<tr>
+						<td colspan="2"><span style="color: gray;">&nbsp;Add the blogVault Badge to your site</span></td>
+					</tr>
+					<tr>
+						<td><a href="http://blogvault.net?src=wpbadge"><img src="//s3.amazonaws.com/bvimgs/wordpress_backup_bbd1.png" alt="Mobile Analytics" /></a></td>
+						<td style="padding-left: 20px;">
+<?php
+	global $wp_registered_sidebars;
+	global $sidebars_widgets;
+	$selected = "checked";
+
+	foreach ((array)$wp_registered_sidebars as $index => $sidebar) {
+		if (is_active_sidebar($index) && is_array($sidebars_widgets[$index]) && (count($sidebars_widgets[$index]) > 0)) {
+			$selected = "";
+?>
+							<div><input type="radio" name="insert_badge" value="<?php echo $index ?>" checked /> In the Sidebar</div>
+<?php
+			break;
+		}
+	}
+?>
+							<div><input type="radio" name="insert_badge" value="bvfooter" <?php echo $selected ?> /> In the Footer</div>
+							<div><input type="radio" name="insert_badge" value="bvmanual" /> Manually</div>
+					</tr>
+					<tr>
+						<td colspan=2>
+							<!-- blogVault Badge Code -->
+							<div style="background-color: #eff2f7; padding: 2px; width: 90%">
+								<span style="color: #70798f;">To manually add the badge copy this code</span>
+								<div style='padding: 5px; margin: 2px 0 0px; background-color: #fff; font-size: 13px; overflow-x: auto; word-wrap: break-word;'>&lt;a href="http://blogvault.net?src=wpbadge"&gt;&lt;img src="//s3.amazonaws.com/bvimgs/wordpress_backup_bbd1.png" alt="WordPress Backup" /&gt;&lt;/a&gt;</div>
+							</div>
+						</td>
+					</tr>
+<?php } ?>
+<!-- End of Badge -->
+
 				<tr>
 					<td></td>
-					<td align="right">
-					<button type="submit">Register</button> 
-				</td></tr>
+					<td><button type="submit">Register</button></td>
+				</tr>
 				<tr>
 					<td></td>
 <?php 	if (isset($_REQUEST['free'])) { ?>
@@ -219,7 +267,6 @@ if ( !function_exists('bvKeyConf') ) :
 			</form>
 
 <?php } ?>
-
 		</div>	<!-- Signin  form ends here -->
 		<div class="bv_3part_column1" style="width:100%;max-width:45%;float:left;padding:3% 2.5% 0 2.5%;overflow:hidden;">
 					<div style="width:100%;overflow:hidden; margin-bottom: 10px;">
@@ -234,7 +281,7 @@ if ( !function_exists('bvKeyConf') ) :
 ?>
 			</div> <!-- MCA -->
 			<div class="bv_ selectedinside_column2" style="margin-top:0.5%;margin-right:0;border:0;max-width:19%;padding:0.5% 0 2em 1%;overflow:hidden;" align="center">
-					<!-- SIDE COLUMN CONTENT GOES HERE -->
+				<!-- SIDE COLUMN CONTENT GOES HERE -->
 <?php
 	if (!$blogvault->getOption('bvPublic')) {
 ?>

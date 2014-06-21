@@ -153,6 +153,8 @@ You can update the blogVault Backup Plugin from within the WordPress Admin Panel
 == Changelog ==
 = 1.13 =
 * Adding events for the dynamic backup of the usermeta table
+* The blogVault badge is added automically to the sidebar or footer in the free backup plan
+* Changing the badge image to wordpress_backup_bbd1.png
 
 = 1.12 =
 * Introducing the free weekly backup plan

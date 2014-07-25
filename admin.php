@@ -9,6 +9,9 @@ if (!function_exists('bvAdminInitHandler')) :
 		global $sidebars_widgets;
 		global $wp_registered_widget_updates;
 
+		if (!current_user_can('activate_plugins'))
+			return;
+
 		if (isset($_REQUEST['bvnonce']) && wp_verify_nonce($_REQUEST['bvnonce'], "bvnonce")) {
 			$badge_location = $_REQUEST['insert_badge'];
 			if (isset($badge_location) && is_array($sidebars_widgets[$badge_location])) {
@@ -182,32 +185,20 @@ if ( !function_exists('bvKeyConf') ) :
 					<tr>
 						<td><a href="http://blogvault.net?src=wpbadge"><img src="//s3.amazonaws.com/bvimgs/wordpress_backup_bbd1.png" alt="Mobile Analytics" /></a></td>
 						<td style="padding-left: 20px;">
+							<div><input type="radio" name="insert_badge" value="bvfooter" checked /> In the Footer</div>
 <?php
 	global $wp_registered_sidebars;
 	global $sidebars_widgets;
-	$selected = "checked";
 
 	foreach ((array)$wp_registered_sidebars as $index => $sidebar) {
 		if (is_active_sidebar($index) && is_array($sidebars_widgets[$index]) && (count($sidebars_widgets[$index]) > 0)) {
-			$selected = "";
 ?>
-							<div><input type="radio" name="insert_badge" value="<?php echo $index ?>" checked /> In the Sidebar</div>
+							<div><input type="radio" name="insert_badge" value="<?php echo $index ?>" /> In the Sidebar</div>
 <?php
 			break;
 		}
 	}
 ?>
-							<div><input type="radio" name="insert_badge" value="bvfooter" <?php echo $selected ?> /> In the Footer</div>
-							<div><input type="radio" name="insert_badge" value="bvmanual" /> Manually</div>
-					</tr>
-					<tr>
-						<td colspan=2>
-							<!-- blogVault Badge Code -->
-							<div style="background-color: #eff2f7; padding: 2px; width: 90%">
-								<span style="color: #70798f;">To manually add the badge copy this code</span>
-								<div style='padding: 5px; margin: 2px 0 0px; background-color: #fff; font-size: 13px; overflow-x: auto; word-wrap: break-word;'>&lt;a href="http://blogvault.net?src=wpbadge"&gt;&lt;img src="//s3.amazonaws.com/bvimgs/wordpress_backup_bbd1.png" alt="WordPress Backup" /&gt;&lt;/a&gt;</div>
-							</div>
-						</td>
 					</tr>
 <?php } ?>
 <!-- End of Badge -->

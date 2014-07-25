@@ -5,7 +5,7 @@ Plugin URI: http://blogvault.net/
 Description: Easiest way to backup your blog
 Author: blogVault.net
 Author URI: http://blogvault.net/
-Version: 1.13
+Version: 1.14
  */
 
 /*  Copyright YEAR  PLUGIN_AUTHOR_NAME  (email : PLUGIN AUTHOR EMAIL)
@@ -28,7 +28,7 @@ Version: 1.13
 global $bvVersion;
 global $blogvault;
 global $bvDynamicEvents;
-$bvVersion = '1.13';
+$bvVersion = '1.14';
 
 if (is_admin())
 	require_once dirname( __FILE__ ) . '/admin.php';
@@ -869,11 +869,11 @@ class BVDynamicBackup {
 	function comment_action_handler($comment_id) {
 		if (!is_array($comment_id)) {
 			if (wp_get_comment_status($comment_id) != 'spam')
-			$this->add_db_event('comments', array('comment_ID' => $comment_id));
+				$this->add_db_event('comments', array('comment_ID' => $comment_id));
 		} else {
 			foreach ($comment_id as $id) {
 				if (wp_get_comment_status($comment_id) != 'spam')
-				$this->add_db_event('comments', array('comment_ID' => $id));
+					$this->add_db_event('comments', array('comment_ID' => $id));
 			}
 		}
 	}
@@ -917,13 +917,20 @@ class BVDynamicBackup {
 		$this->add_db_event('links', array('link_id' => $link_id));
 	}
 
-	function term_handler($term_id, $tt_id = null) {
+	function edited_terms_handler($term_id, $taxonomy = null) {
 		$this->add_db_event('terms', array('term_id' => $term_id));
-		if ($tt_id)
-			$this->term_taxonomy_handler($tt_id);
 	}
 
-	function term_taxonomy_handler($tt_id) {
+	function term_handler($term_id, $tt_id, $taxonomy) {
+		$this->add_db_event('terms', array('term_id' => $term_id));
+		$this->term_taxonomy_handler($tt_id, $taxonomy);
+	}
+
+	function delete_term_handler($term, $tt_id, $taxonomy, $deleted_term ) {
+		$this->add_db_event('terms', array('term_id' => $term, 'msg_type' => 'delete'));
+	}
+
+	function term_taxonomy_handler($tt_id, $taxonomy = null) {
 		$this->add_db_event('term_taxonomy', array('term_taxonomy_id' => $tt_id));
 	}
 
@@ -1011,9 +1018,6 @@ class BVDynamicBackup {
 	}
 
 	/* WOOCOMMERCE SUPPORT FUNCTIONS BEGINS FROM HERE*/
-	function delete_term_handler($term_id, $tt_id = null) {
-		return $this->add_db_event('woocommerce_termmeta', array('woocommerce_term_id' => $term_id, 'msg_type' => 'delete'));
-	}
 
 	function woocommerce_settings_start_handler() {
 		if (!empty($_POST)) {
@@ -1174,9 +1178,38 @@ class BVDynamicBackup {
 		$this->add_event('sync_table', array('name' => 'postmeta'));
 	}
 
+	function woocommerce_tax_rate_handler($tax_rate_id, $_tax_rate) {
+		$this->add_db_event('woocommerce_tax_rates', array('tax_rate_id' => $tax_rate_id));
+		$this->add_db_event('woocommerce_tax_rate_locations', array('tax_rate_id' => $tax_rate_id));
+	}
+
+	function woocommerce_tax_rate_deleted_handler($tax_rate_id) {
+		$this->add_db_event('woocommerce_tax_rates', array('tax_rate_id' => $tax_rate_id, 'msg_type' => 'delete'));
+		$this->add_db_event('woocommerce_tax_rate_locations', array('tax_rate_id' => $tax_rate_id, 'msg_type' => 'delete'));
+	}
+
+	function woocommerce_grant_product_download_access_handler($data) {
+		$this->add_db_event('woocommerce_downloadable_product_permissions', array('download_id' => $data['download_id']));
+	}
+
+	function woocommerce_ajax_revoke_access_to_product_download_handler($download_id, $product_id, $order_id) {
+		$this->add_db_event('woocommerce_downloadable_product_permissions', array('order_id' => $order_id, 'product_id' => $product_id, 'download_id' => $download_id, 'msg_type' => 'delete'));
+	}
+
 	function woocommerce_delete_order_items_handler($postid) {
-		$this->add_db_event('woocommerce_order_itemmeta', array('order_item_id' => $postid, 'msg_type' => 'delete'));
-		$this->add_db_event('woocommerce_order_items', array('order_item_id' => $postid, 'msg_type' => 'delete'));
+		global $wpdb;
+		$meta_ids = array();
+		$order_item_ids = array();
+		foreach( $wpdb->get_results("SELECT {$wpdb->prefix}woocommerce_order_itemmeta.meta_id, {$wpdb->prefix}woocommerce_order_items.order_item_id FROM {$wpdb->prefix}woocommerce_order_items JOIN {$wpdb->prefix}woocommerce_order_itemmeta ON {$wpdb->prefix}woocommerce_order_items.order_item_id = {$wpdb->prefix}woocommerce_order_itemmeta.order_item_id WHERE {$wpdb->prefix}woocommerce_order_items.order_id = '{$postid}'") as $key => $row) {
+			if (!in_array($row->meta_id, $meta_ids)) {
+				$meta_ids[] = $row->meta_id;
+				$this->add_db_event('woocommerce_order_itemmeta', array('meta_id' => $row->meta_id, 'msg_type' => 'delete'));
+			}
+			if (!in_array($row->order_item_id, $order_item_ids)) {
+				$order_item_ids[] = $row->order_item_id;
+				$this->add_db_event('woocommerce_order_items', array('order_item_id' => $row->order_item_id, 'msg_type' => 'delete'));
+			}
+		}
 	}
 
 	function import_handler() {
@@ -1247,10 +1280,11 @@ class BVDynamicBackup {
 		add_action('delete_link', array($this, 'link_action_handler'));
 
 		/* CAPTURING EVENTS FOR WP_TERM AND WP_TERM_TAXONOMY TABLE */
-		add_action('created_term', array($this, 'term_handler'), 10, 2);
-		add_action('edited_terms', array($this, 'term_handler'), 10, 2);
-		add_action('delete_term', array($this, 'term_handler'), 10, 2);
-		add_action('edit_term_taxonomy', array($this, 'term_taxonomy_handler'));
+		add_action('created_term', array($this, 'term_handler'), 10, 3);
+		add_action('edited_term', array( $this, 'term_handler' ), 10, 3);
+		add_action('edited_terms', array($this, 'edited_terms_handler'), 10, 2);
+		add_action('delete_term', array($this, 'delete_term_handler'), 10, 4);
+		add_action('edit_term_taxonomy', array($this, 'term_taxonomy_handler'), 10, 2);
 		add_action('delete_term_taxonomy', array($this, 'term_taxonomy_handler'));
 		add_action('edit_term_taxonomies', array($this, 'term_taxonomies_handler'));
 		add_action('add_term_relationship', array($this, 'term_relationship_handler'), 10, 2);
@@ -1281,7 +1315,6 @@ class BVDynamicBackup {
 
 		$is_woo_dyn = $blogvault->getOption('bvWooDynSync');
 		if ($is_woo_dyn == 'yes') {
-			add_action('delete_term', array($this, 'delete_term_handler'), 10, 2);
 			add_action('woocommerce_settings_start', array($this, 'woocommerce_settings_start_handler'));
 
 			add_action('woocommerce_resume_order', array($this, 'woocommerce_resume_order_handler'), 10, 1);
@@ -1315,11 +1348,17 @@ class BVDynamicBackup {
 			add_action('woocommerce_update_product_variation', array($this, 'woocommerce_update_product_variation_handler'), 10, 1);
 			add_action('woocommerce_save_product_variation', array($this, 'woocommerce_save_product_variation_handler'), 10, 2);
 			add_action('woocommerce_duplicate_product', array($this, 'woocommerce_duplicate_product_handler'), 10, 2);
-			add_action('before_delete_post', array($this, 'woocommerce_delete_order_items_handler'), 10, 1);
+			add_action('woocommerce_delete_order_items', array($this, 'woocommerce_delete_order_items_handler'), 10, 1);
 			add_action('import_start', array($this, 'import_handler'));
 			add_action('import_end', array($this, 'import_handler'));
 
 			add_action('retrieve_password_key', array($this, 'retrieve_password_key_handler'), 10, 2);
+			add_action('woocommerce_tax_rate_added', array($this, 'woocommerce_tax_rate_handler'), 10, 2);
+			add_action('woocommerce_tax_rate_deleted', array($this, 'woocommerce_tax_rate_deleted_handler'), 10, 1);
+			add_action('woocommerce_tax_rate_updated', array($this, 'woocommerce_tax_rate_handler'), 10, 2);
+			
+			add_action('woocommerce_grant_product_download_access', array($this, 'woocommerce_grant_product_download_access_handler'), 10, 1);
+			add_action('woocommerce_ajax_revoke_access_to_product_download', array($this, 'woocommerce_ajax_revoke_access_to_product_download_handler'), 10, 3);
 		}
 
 		$this->add_bv_required_filters();

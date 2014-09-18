@@ -1,5 +1,5 @@
-=== Backup by blogVault ===
-Name: Backup by blogVault
+=== blogVault Real-time Backup ===
+Name: blogVault Real-time Backup
 Contributors: Backup by blogVault, akshatc, singhsivam
 Tags: backup, wordpress backup, database backup, complete backup, wp backup, website backup, blogvault, real-time backup, dropbox backup, files backup, wp backup, backup plugin
 Donate link: http://blogvault.net
@@ -222,6 +222,10 @@ Real-time Backup refers to the backup of your WordPress content by saving every 
 1. Backup of all your WordPress sites managed from one location
 
 == Changelog ==
+= 1.15 =
+* Separating to multiple files
+* Adding BVSecurity with limit logins
+
 = 1.14 =
 * Better handling for real-time backup events for WooCommerce
 * Support real-time backups for WooCommerce version 2.1.12

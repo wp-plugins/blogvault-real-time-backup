@@ -222,6 +222,12 @@ Real-time Backup refers to the backup of your WordPress content by saving every 
 1. Backup of all your WordPress sites managed from one location
 
 == Changelog ==
+= 1.16 =
+* Improving the Base64 Decode functionality so that it is extensible for any parameter in the future and backups can be completed for any site
+* Separating out callbacks gettablecreate and getrowscount to make the backups more modular
+* The plugin will now automatically ping the server once a day. This will ensure that we know if we are not doing the backup of a site where the plugin is activated.
+* Use SHA1 for authentication instead of MD5
+
 = 1.15 =
 * Separating to multiple files
 * Adding BVSecurity with limit logins

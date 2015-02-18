@@ -4,7 +4,7 @@ Contributors: Backup by blogVault, akshatc, singhsivam
 Tags: backup, wordpress backup, database backup, complete backup, wp backup, website backup, blogvault, real-time backup, dropbox backup, files backup, wp backup, backup plugin
 Donate link: http://blogvault.net
 Requires at least: 1.5
-Tested up to: 4.0
+Tested up to: 4.1
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html

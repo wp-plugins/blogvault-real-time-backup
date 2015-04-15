@@ -46,8 +46,8 @@ if (!function_exists('bvAdminInitHandler')) :
 			}
 		}
 
-		if ($blogvault->getOption('bvActivateRedirect')) {
-			$blogvault->updateOption('bvActivateRedirect', false);
+		if ($blogvault->getOption('bvActivateRedirect') === 'yes') {
+			$blogvault->updateOption('bvActivateRedirect', 'no');
 			if (defined('BVMIGRATEPLUGIN')) {
 				wp_redirect('admin.php?page=bv-migrate');
 			} else {

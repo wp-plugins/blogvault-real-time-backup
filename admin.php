@@ -18,7 +18,7 @@ if (!function_exists('bvAdminInitHandler')) :
 				$control = $wp_registered_widget_updates['text'];
 				$widget = $control['callback'][0];
 				$multi_number = $widget->number + 1;
-				$instance = array("title" => "WordPress Backup", "text" => '<a href="http://blogvault.net?src=wpbadge"><img src="//s3.amazonaws.com/bvimgs/wordpress_backup_bbd1.png" alt="WordPress Backup" /></a>');
+				$instance = array("title" => "WordPress Backup", "text" => '<a href="http://blogvault.net?src=wpbadge"><img src="<?php echo plugins_url(\'img/wordpress_backup_bbd1.png\', __FILE__); ?>" alt="WordPress Backup" /></a>');
 				$_POST['widget-text'] = array($multi_number => $instance);
 				$_POST['multi_number'] = $multi_number;
 				$_POST['id_base'] = 'text';
@@ -82,7 +82,7 @@ if ( !function_exists('bvMigrate') ) :
 	function bvMigrate() {
 		global $blogvault, $bvNotice;
 ?>
-<form rel="canonical" action="https://webapp.blogvault.net/home/api_signup" style="padding:0 2% 2em 1%;" method="post" name="signup">
+<form dummy=">" action="https://webapp.blogvault.net/home/api_signup" style="padding:0 2% 2em 1%;" method="post" name="signup">
 <h1>Migrate Site</h1>
 	<input type="hidden" name="bvsrc" value="wpplugin" />
 	<input type="hidden" name="migrate" value="true" />
@@ -192,7 +192,7 @@ if ( !function_exists('bvKeyConf') ) :
 <?php } ?>
 			</div>
 
-			<form rel="canonical" action="https://webapp.blogvault.net/home/api_signup" style="padding:0 2% 2em 1%;" method="post" name="signup">
+			<form dummy=">" action="https://webapp.blogvault.net/home/api_signup" style="padding:0 2% 2em 1%;" method="post" name="signup">
 				<input type="hidden" name="bvsrc" value="wpplugin" />
 				<input type="hidden" name="url" value="<?php echo $blogvault->wpurl(); ?>" />
 				<input type="hidden" name="secret" value="<?php echo $blogvault->getOption('bvSecretKey'); ?>">
@@ -242,7 +242,7 @@ if ( !function_exists('bvKeyConf') ) :
 						<td colspan="2"><span style="color: gray;">&nbsp;Add the blogVault Badge to your site</span></td>
 					</tr>
 					<tr>
-						<td><a href="http://blogvault.net?src=wpbadge"><img src="//s3.amazonaws.com/bvimgs/wordpress_backup_bbd1.png" alt="Mobile Analytics" /></a></td>
+						<td><a href="http://blogvault.net?src=wpbadge"><img src="<?php echo plugins_url('img/wordpress_backup_bbd1.png', __FILE__); ?>" alt="WordPress Backup" /></a></td>
 						<td style="padding-left: 20px;">
 							<div><input type="radio" name="insert_badge" value="bvfooter" checked /> In the Footer</div>
 <?php
@@ -283,7 +283,7 @@ if ( !function_exists('bvKeyConf') ) :
 			<div>
 			  <font size="3">Login to your blogVault Account!</font>
 			</div>
-			<form rel="canonical" action="https://webapp.blogvault.net/home/api_signin" style="padding:0 2% 2em 1%;" method="post" name="signin">
+			<form dummy=">" action="https://webapp.blogvault.net/home/api_signin" style="padding:0 2% 2em 1%;" method="post" name="signin">
 				<input type="hidden" name="bvsrc" value="wpplugin" />
 				<input type="hidden" name="url" value="<?php echo $blogvault->wpurl(); ?>">
 				<input type="hidden" name="secret" value="<?php echo $blogvault->getOption('bvSecretKey'); ?>">

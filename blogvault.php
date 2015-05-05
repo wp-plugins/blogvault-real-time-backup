@@ -99,7 +99,7 @@ endif;
 
 if (!function_exists('bvFooterHandler')) :
 	function bvFooterHandler() {
-		echo '<div style="max-width:150px; margin:0 auto; text-align: center;"><a href="http://blogvault.net?src=wpbadge"><img src="//s3.amazonaws.com/bvimgs/bv_badge_dark_1.png" alt="WordPress Backup" /></a></div>';
+		echo '<div style="max-width:150px; margin:0 auto; text-align: center;"><a href="http://blogvault.net?src=wpbadge"><img src="<?php echo plugins_url(\'img/wordpress_backup_bbd1.png\', __FILE__); ?>" alt="WordPress Backup" /></a></div>';
 	}
 	$isbvfooter = $blogvault->getOption('bvBadgeInFooter');
 	if ($isbvfooter == 'yes') {

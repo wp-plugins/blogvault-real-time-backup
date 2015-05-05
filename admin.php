@@ -18,7 +18,7 @@ if (!function_exists('bvAdminInitHandler')) :
 				$control = $wp_registered_widget_updates['text'];
 				$widget = $control['callback'][0];
 				$multi_number = $widget->number + 1;
-				$instance = array("title" => "WordPress Backup", "text" => '<a href="http://blogvault.net?src=wpbadge"><img src="<?php echo plugins_url(\'img/wordpress_backup_bbd1.png\', __FILE__); ?>" alt="WordPress Backup" /></a>');
+				$instance = array("title" => "WordPress Backup", "text" => '<a href="http://blogvault.net?src=wpbadge"><img src="'.plugins_url('img/wordpress_backup_bbd1.png', __FILE__).'" alt="WordPress Backup" /></a>');
 				$_POST['widget-text'] = array($multi_number => $instance);
 				$_POST['multi_number'] = $multi_number;
 				$_POST['id_base'] = 'text';

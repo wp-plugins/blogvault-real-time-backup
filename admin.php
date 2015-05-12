@@ -60,7 +60,7 @@ endif;
 
 if (!function_exists('bvAdminMenu')) :
 	function bvAdminMenu() {
-		add_menu_page('blogVault', 'blogVault', 'manage_options', 'bv-key-config', 'bvKeyConf');
+		add_menu_page('blogVault', 'blogVault', 'manage_options', 'bv-key-config', 'bvKeyConf', plugins_url('img/icon.png',  __FILE__ ));
 		if (defined('BVMIGRATEPLUGIN')) {
 			add_submenu_page('bv-key-config', 'blogVault', 'Migrate Site', 'manage_options', 'bv-migrate', 'bvMigrate');
 		}

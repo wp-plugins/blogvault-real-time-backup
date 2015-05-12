@@ -281,6 +281,7 @@ class BlogVault {
 		if (function_exists('is_ssl') && is_ssl()) {
 			$body['https'] = "1";
 		}
+		$body['sha1'] = "1";
 		$all_tables = $this->getAllTables();
 		$i = 0;
 		foreach ($all_tables as $table) {
@@ -337,6 +338,7 @@ class BlogVault {
 		$body['woodyn'] = urlencode($blogvault->getOption('bvWooDynSync'));
 		return $body;
 	}
+
 	function listTables() {
 		global $wpdb;
 
@@ -514,8 +516,8 @@ class BlogVault {
 				return false;
 			}
 		} else {
-		if (md5($method.$secret.$time.$version) != $sig) {
-			return false;
+			if (md5($method.$secret.$time.$version) != $sig) {
+				return false;
 			}
 		}
 		$this->updateOption('bvLastRecvTime', $time);

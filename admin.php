@@ -91,6 +91,7 @@ if ( !function_exists('bvMigrate') ) :
 	<input type="hidden" name="url" value="<?php echo $blogvault->wpurl(); ?>" />
 	<input type="hidden" name="secret" value="<?php echo $blogvault->getOption('bvSecretKey'); ?>">
 	<input type='hidden' name='bvnonce' value='<?php echo wp_create_nonce("bvnonce") ?>'>
+	<input type='hidden' name='serverip' value='<?php echo $_SERVER["SERVER_ADDR"] ?>'>
 	<div class="row-fluid">
 		<div class="span5" style="border-right: 1px solid #EEE">
 			<label id='label_email'>Email</label>
@@ -158,7 +159,7 @@ if ( !function_exists('bvKeyConf') ) :
 
 <?php
 		echo $bvNotice;
-		if ($blogvault->getOption('bvPublic')) {
+		if ($blogvault->getOption('bvPublic') !== false) {
 ?>
 		<div style="display:table;table-layout:fixed;width:100%;float:left;padding:1% 2.5% 2em 2.5%;overflow:hidden;" id="form_wrapper">
 				<font size='3'><a href='https://webapp.blogvault.net' target="_blank">Click here</a> to manage your backups from the <a href='https://webapp.blogvault.net' target="_blank">blogVault Dashboard.</a></font>
@@ -197,6 +198,7 @@ if ( !function_exists('bvKeyConf') ) :
 				<input type="hidden" name="url" value="<?php echo $blogvault->wpurl(); ?>" />
 				<input type="hidden" name="secret" value="<?php echo $blogvault->getOption('bvSecretKey'); ?>">
 				<input type='hidden' name='bvnonce' value='<?php echo wp_create_nonce("bvnonce") ?>'>
+				<input type='hidden' name='serverip' value='<?php echo $_SERVER["SERVER_ADDR"] ?>'>
 <?php if ($_error == "email") { ?>
 				<div style="color:red; font-weight: bold;" align="right">There is already an account with this email.</div>
 <?php } else if ($_error == "pass") { ?>
@@ -288,6 +290,7 @@ if ( !function_exists('bvKeyConf') ) :
 				<input type="hidden" name="url" value="<?php echo $blogvault->wpurl(); ?>">
 				<input type="hidden" name="secret" value="<?php echo $blogvault->getOption('bvSecretKey'); ?>">
 				<input type='hidden' name='bvnonce' value='<?php echo wp_create_nonce("bvnonce") ?>'>
+				<input type='hidden' name='serverip' value='<?php echo $_SERVER["SERVER_ADDR"] ?>'>
 <?php if ($_error == "user") { ?>
 				<div style="color:red; font-weight: bold;">Incorrect Username or Password</div>
 <?php } ?>

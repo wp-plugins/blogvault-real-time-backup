@@ -222,6 +222,10 @@ Real-time Backup refers to the backup of your WordPress content by saving every 
 1. Backup of all your WordPress sites managed from one location
 
 == Changelog ==
+= 1.17 =
+* Add support for repair table so that the backup plugin itself can be used to repair tables without needing PHPMyAdmin access
+* Making the plugin to be available network wide.
+
 = 1.16 =
 * Improving the Base64 Decode functionality so that it is extensible for any parameter in the future and backups can be completed for any site
 * Separating out callbacks gettablecreate and getrowscount to make the backups more modular

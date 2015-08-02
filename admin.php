@@ -18,7 +18,7 @@ endif;
 
 if (!function_exists('bvAdminInitHandler')) :
 	function bvAdminInitHandler() {
-		global $bvNotice, $blogvault;
+		global $bvNotice, $blogvault, $bvAdminPage;
 		global $sidebars_widgets;
 		global $wp_registered_widget_updates;
 
@@ -42,7 +42,7 @@ if (!function_exists('bvAdminInitHandler')) :
 				$blogvault->updateOption('bvBadgeInFooter', 'yes');
 			}
 
-			if (isset($_REQUEST['blogvaultkey'])) {
+			if (isset($_REQUEST['blogvaultkey']) && isset($_REQUEST['page']) && $_REQUEST['page'] == $bvAdminPage) {
 				if ((strlen($_REQUEST['blogvaultkey']) == 64)) {
 					$keys = str_split($_REQUEST['blogvaultkey'], 32);
 					$blogvault->updatekeys($keys[0], $keys[1]);

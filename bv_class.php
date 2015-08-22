@@ -534,13 +534,14 @@ class BlogVault {
 			return false;
 		}
 		if (array_key_exists('sha1', $_REQUEST)) {
-			if (sha1($method.$secret.$time.$version) != $sig) {
-				return false;
-			}
+			$sig_match = sha1($method.$secret.$time.$version);
+			$this->addStatus('sha1', $_REQUEST['sha1']);
 		} else {
-			if (md5($method.$secret.$time.$version) != $sig) {
-				return false;
-			}
+			$sig_match = md5($method.$secret.$time.$version);
+		}
+		if ($sig_match != $sig) {
+			$this->addStatus("sigmatch", substr($sig_match, 0, 6));
+			return false;
 		}
 		$this->updateOption('bvLastRecvTime', $time);
 		return true;
@@ -673,179 +674,180 @@ class BlogVault {
 				break;
 			}
 			break;
-			case "getignorednames":
-				switch ($_REQUEST['table']) {
-				case "options":
-					$names = $this->getOption('bvIgnoredOptions');
-					break;
-				case "postmeta":
-					$names = $this->getOption('bvIgnoredPostmeta');
-					break;
-				}
-				$this->addStatus("names", $names);
+		case "getignorednames":
+			switch ($_REQUEST['table']) {
+			case "options":
+				$names = $this->getOption('bvIgnoredOptions');
 				break;
-				case "phpinfo":
-					phpinfo();
-					die();
-					break;
-				case "getposts":
-					$post_type = urldecode($_REQUEST['post_type']);
-					$args = array('numberposts' => 5, 'post_type' => $post_type);
-					$posts = get_posts($args);
-					$keys = array('post_title', 'guid', 'ID', 'post_date');
-					foreach($posts as $post) {
-						$pdata = array();
-						$post_array = get_object_vars($post);
-						foreach($keys as $key) {
-							$pdata[$key] = $post_array[$key];
-						}
-						$this->addArrayToStatus("posts", $pdata);
-					}
-					break;
-				case "getstats":
-					$this->addStatus("posts", get_object_vars(wp_count_posts()));
-					$this->addStatus("pages", get_object_vars(wp_count_posts("page")));
-					$this->addStatus("comments", get_object_vars(wp_count_comments()));
-					break;
-				case "getinfo":
-					if (array_key_exists('wp', $_REQUEST)) {
-						$wp_info = array(
-							'current_theme' => (string)(function_exists('wp_get_theme') ? wp_get_theme() : get_current_theme()),
-							'dbprefix' => $wpdb->base_prefix ? $wpdb->base_prefix : $wpdb->prefix,
-							'wpmu' => $this->isMultisite(),
-							'mainsite' => $this->isMainSite(),
-							'name' => get_bloginfo('name'),
-							'site_url' => get_bloginfo('wpurl'),
-							'home_url' => get_bloginfo('url'),
-							'charset' => get_bloginfo('charset'),
-							'wpversion' => $wp_version,
-							'dbversion' => $wp_db_version,
-							'abspath' => ABSPATH,
-							'uploadpath' => $this->uploadPath(),
-							'uploaddir' => wp_upload_dir(),
-							'contentdir' => defined('WP_CONTENT_DIR') ? WP_CONTENT_DIR : null,
-							'plugindir' => defined('WP_PLUGIN_DIR') ? WP_PLUGIN_DIR : null,
-							'dbcharset' => defined('DB_CHARSET') ? DB_CHARSET : null,
-							'disallow_file_edit' => defined('DISALLOW_FILE_EDIT'),
-							'disallow_file_mods' => defined('DISALLOW_FILE_MODS'),
-							'bvversion' => $bvVersion
+			case "postmeta":
+				$names = $this->getOption('bvIgnoredPostmeta');
+				break;
+			}
+			$this->addStatus("names", $names);
+			break;
+		case "phpinfo":
+			phpinfo();
+			die();
+			break;
+		case "getposts":
+			$post_type = urldecode($_REQUEST['post_type']);
+			$args = array('numberposts' => 5, 'post_type' => $post_type);
+			$posts = get_posts($args);
+			$keys = array('post_title', 'guid', 'ID', 'post_date');
+			foreach($posts as $post) {
+				$pdata = array();
+				$post_array = get_object_vars($post);
+				foreach($keys as $key) {
+					$pdata[$key] = $post_array[$key];
+				}
+				$this->addArrayToStatus("posts", $pdata);
+				$this->addArrayToStatus("post_type", $post_type);
+			}
+			break;
+		case "getstats":
+			$this->addStatus("posts", get_object_vars(wp_count_posts()));
+			$this->addStatus("pages", get_object_vars(wp_count_posts("page")));
+			$this->addStatus("comments", get_object_vars(wp_count_comments()));
+			break;
+		case "getinfo":
+			if (array_key_exists('wp', $_REQUEST)) {
+				$wp_info = array(
+					'current_theme' => (string)(function_exists('wp_get_theme') ? wp_get_theme() : get_current_theme()),
+					'dbprefix' => $wpdb->base_prefix ? $wpdb->base_prefix : $wpdb->prefix,
+					'wpmu' => $this->isMultisite(),
+					'mainsite' => $this->isMainSite(),
+					'name' => get_bloginfo('name'),
+					'site_url' => get_bloginfo('wpurl'),
+					'home_url' => get_bloginfo('url'),
+					'charset' => get_bloginfo('charset'),
+					'wpversion' => $wp_version,
+					'dbversion' => $wp_db_version,
+					'abspath' => ABSPATH,
+					'uploadpath' => $this->uploadPath(),
+					'uploaddir' => wp_upload_dir(),
+					'contentdir' => defined('WP_CONTENT_DIR') ? WP_CONTENT_DIR : null,
+					'plugindir' => defined('WP_PLUGIN_DIR') ? WP_PLUGIN_DIR : null,
+					'dbcharset' => defined('DB_CHARSET') ? DB_CHARSET : null,
+					'disallow_file_edit' => defined('DISALLOW_FILE_EDIT'),
+					'disallow_file_mods' => defined('DISALLOW_FILE_MODS'),
+					'bvversion' => $bvVersion
+				);
+				$this->addStatus("wp", $wp_info);
+			}
+			if (array_key_exists('plugins', $_REQUEST)) {
+				if (!function_exists('get_plugins'))
+					require_once (ABSPATH."wp-admin/includes/plugin.php");
+				$plugins = get_plugins();
+				foreach($plugins as $plugin_file => $plugin_data) {
+					$pdata = array(
+						'file' => $plugin_file,
+						'title' => $plugin_data['Title'],
+						'version' => $plugin_data['Version'],
+						'active' => is_plugin_active($plugin_file)
+					);
+					$this->addArrayToStatus("plugins", $pdata);
+				}
+			}
+			if (array_key_exists('themes', $_REQUEST)) {
+				$themes = function_exists('wp_get_themes') ? wp_get_themes() : get_themes();
+				foreach($themes as $theme) {
+					if (is_object($theme)) {
+						$pdata = array(
+							'name' => $theme->Name,
+							'title' => $theme->Title,
+							'stylesheet' => $theme->get_stylesheet(),
+							'template' => $theme->Template,
+							'version' => $theme->Version
 						);
-						$this->addStatus("wp", $wp_info);
-					}
-					if (array_key_exists('plugins', $_REQUEST)) {
-						if (!function_exists('get_plugins'))
-							require_once (ABSPATH."wp-admin/includes/plugin.php");
-						$plugins = get_plugins();
-						foreach($plugins as $plugin_file => $plugin_data) {
-							$pdata = array(
-								'file' => $plugin_file,
-								'title' => $plugin_data['Title'],
-								'version' => $plugin_data['Version'],
-								'active' => is_plugin_active($plugin_file)
-							);
-							$this->addArrayToStatus("plugins", $pdata);
-						}
-					}
-					if (array_key_exists('themes', $_REQUEST)) {
-						$themes = function_exists('wp_get_themes') ? wp_get_themes() : get_themes();
-						foreach($themes as $theme) {
-							if (is_object($theme)) {
-								$pdata = array(
-									'name' => $theme->Name,
-									'title' => $theme->Title,
-									'stylesheet' => $theme->get_stylesheet(),
-									'template' => $theme->Template,
-									'version' => $theme->Version
-								);
-							} else {
-								$pdata = array(
-									'name' => $theme["Name"],
-									'title' => $theme["Title"],
-									'stylesheet' => $theme["Stylesheet"],
-									'template' => $theme["Template"],
-									'version' => $theme["Version"]
-								);
-							}
-							$this->addArrayToStatus("themes", $pdata);
-						}
-					}
-					if (array_key_exists('users', $_REQUEST)) {
-						$users = array();
-						if (function_exists('get_users')) {
-							$users = get_users('search=admin');
-						} else if (function_exists('get_users_of_blog')) {
-							$users = get_users_of_blog();
-						}
-						foreach($users as $user) {
-							if (stristr($user->user_login, 'admin')) {
-								$pdata = array(
-									'login' => $user->user_login,
-									'ID' => $user->ID
-								);
-								$this->addArrayToStatus("users", $pdata);
-							}
-						}
-					}
-					if (array_key_exists('system', $_REQUEST)) {
-						$sys_info = array(
-							'serverip' => $_SERVER['SERVER_ADDR'],
-							'host' => $_SERVER['HTTP_HOST'],
-							'phpversion' => phpversion(),
-							'uid' => getmyuid(),
-							'gid' => getmygid(),
-							'user' => get_current_user()
+					} else {
+						$pdata = array(
+							'name' => $theme["Name"],
+							'title' => $theme["Title"],
+							'stylesheet' => $theme["Stylesheet"],
+							'template' => $theme["Template"],
+							'version' => $theme["Version"]
 						);
-						if (function_exists('posix_getuid')) {
-							$sys_info['webuid'] = posix_getuid();
-							$sys_info['webgid'] = posix_getgid();
-						}
-						$this->addStatus("sys", $sys_info);
 					}
-					break;
-				case "setsecurityconf":
-					$new_conf = $_REQUEST['secconf'];
-					if (!is_array($new_conf)) {
-						$new_conf = array();
+					$this->addArrayToStatus("themes", $pdata);
+				}
+			}
+			if (array_key_exists('users', $_REQUEST)) {
+				$users = array();
+				if (function_exists('get_users')) {
+					$users = get_users('search=admin');
+				} else if (function_exists('get_users_of_blog')) {
+					$users = get_users_of_blog();
+				}
+				foreach($users as $user) {
+					if (stristr($user->user_login, 'admin')) {
+						$pdata = array(
+							'login' => $user->user_login,
+							'ID' => $user->ID
+						);
+						$this->addArrayToStatus("users", $pdata);
 					}
-					$this->updateOption('bvsecurityconfig', $new_conf);
-					break;
-				case "getsecurityconf":
-					$new_conf = $this->getOption('bvsecurityconfig');
-					$this->addStatus("secconf", $new_conf);
-					break;
-				case "describetable":
-					$table = urldecode($_REQUEST['table']);
-					$this->describeTable($table);
-					break;
-				case "checktable":
-					$table = urldecode($_REQUEST['table']);
-					$type = urldecode($_REQUEST['type']);
-					$this->checkTable($table, $type);
-					break;
-				case "repairtable":
-					$table = urldecode($_REQUEST['table']);
-					$this->repairTable($table);
-					break;
-				case "tablekeys":
-					$table = urldecode($_REQUEST['table']);
-					$this->tableKeys($table);
-					break;
-				case "gettablecreate":
-					$tname = $_REQUEST['table'];
-					$this->addStatus("create", $this->tableCreate($tname));
-					break;
-				case "getrowscount":
-					$tname = $_REQUEST['table'];
-					$this->addStatus("count", $this->rowsCount($tname));
-					break;
-				case "updatedailyping":
-					$value = $_REQUEST['value'];
-					$this->addStatus("bvDailyPing", $this->updateDailyPing($value));
-					break;
-				default:
-					$this->addStatus("statusmsg", "Bad Command");
-					$this->addStatus("status", false);
-					break;
+				}
+			}
+			if (array_key_exists('system', $_REQUEST)) {
+				$sys_info = array(
+					'serverip' => $_SERVER['SERVER_ADDR'],
+					'host' => $_SERVER['HTTP_HOST'],
+					'phpversion' => phpversion(),
+					'uid' => getmyuid(),
+					'gid' => getmygid(),
+					'user' => get_current_user()
+				);
+				if (function_exists('posix_getuid')) {
+					$sys_info['webuid'] = posix_getuid();
+					$sys_info['webgid'] = posix_getgid();
+				}
+				$this->addStatus("sys", $sys_info);
+			}
+			break;
+		case "setsecurityconf":
+			$new_conf = $_REQUEST['secconf'];
+			if (!is_array($new_conf)) {
+				$new_conf = array();
+			}
+			$this->updateOption('bvsecurityconfig', $new_conf);
+			break;
+		case "getsecurityconf":
+			$new_conf = $this->getOption('bvsecurityconfig');
+			$this->addStatus("secconf", $new_conf);
+			break;
+		case "describetable":
+			$table = urldecode($_REQUEST['table']);
+			$this->describeTable($table);
+			break;
+		case "checktable":
+			$table = urldecode($_REQUEST['table']);
+			$type = urldecode($_REQUEST['type']);
+			$this->checkTable($table, $type);
+			break;
+		case "repairtable":
+			$table = urldecode($_REQUEST['table']);
+			$this->repairTable($table);
+			break;
+		case "tablekeys":
+			$table = urldecode($_REQUEST['table']);
+			$this->tableKeys($table);
+			break;
+		case "gettablecreate":
+			$tname = $_REQUEST['table'];
+			$this->addStatus("create", $this->tableCreate($tname));
+			break;
+		case "getrowscount":
+			$tname = $_REQUEST['table'];
+			$this->addStatus("count", $this->rowsCount($tname));
+			break;
+		case "updatedailyping":
+			$value = $_REQUEST['value'];
+			$this->addStatus("bvDailyPing", $this->updateDailyPing($value));
+			break;
+		default:
+			$this->addStatus("statusmsg", "Bad Command");
+			$this->addStatus("status", false);
+			break;
 		}
 
 		$this->terminate();

@@ -26,7 +26,26 @@ class BlogVault {
 		$this->status[$key][] = $value;
 	}
 
+	function serverSig() {
+		$sig = sha1($_SERVER['SERVER_ADDR'].ABSPATH);
+		return substr($sig, 0, 6);
+	}
+
+	function dbSig() {
+		if (defined('DB_USER') && defined('DB_NAME') &&
+				defined('DB_PASSWORD') && defined('DB_HOST')) {
+			$sig = sha1(DB_USER.DB_NAME.DB_PASSWORD.DB_HOST);
+			return substr($sig, 0, 6);
+		}
+		return null;
+	}
+
 	function terminate() {
+		$dbsig = $this->dbSig();
+		if ($dbsig)
+			$this->addStatus("dbsig", $dbsig);
+		$this->addStatus("serversig", $this->serverSig());
+
 		die("bvbvbvbvbv".serialize($this->status)."bvbvbvbvbv");
 		exit;
 	}
@@ -45,7 +64,12 @@ class BlogVault {
 		$time = urlencode($time);
 		$version = urlencode($bvVersion);
 		$sig = sha1($public.$secret.$time.$version);
-		return $baseurl.$method."?sha1=1&sig=".$sig."&bvTime=".$time."&bvPublic=".$public."&bvVersion=".$version."&serverip=".$serverip;
+		$serversig = $this->serverSig();
+		$url = $baseurl.$method."?sha1=1&sig=".$sig."&bvTime=".$time."&bvPublic=".$public."&bvVersion=".$version."&serverip=".$serverip."&serversig=".$serversig;
+		$dbsig = $this->dbSig();
+		if ($dbsig)
+			$url .= "&dbsig=".$dbsig;
+		return $url;
 	}
 
 	function randString($length) {
@@ -56,6 +80,24 @@ class BlogVault {
 			$str .= $chars[rand(0, $size - 1)];
 		}
 		return $str;
+	}
+
+	function fileStat($relfile) {
+		$absfile = ABSPATH.$relfile;
+		$fdata = array();
+		$fdata["filename"] = $relfile;
+		$stats = @stat($absfile);
+		if ($stats) {
+			foreach(preg_grep('#size|uid|gid|mode|mtime#i', array_keys($stats)) as $key ) {
+				$fdata[$key] = $stats[$key];
+			}
+			if (is_link($absfile)) {
+				$fdata["link"] = @readlink($absfile);
+			}
+		} else {
+			$fdata["failed"] = true;
+		}
+		return $fdata;
 	}
 
 	function scanFiles($initdir = "./", $offset = 0, $limit = 0, $bsize = 512) {
@@ -82,17 +124,12 @@ class BlogVault {
 			if ($d) {
 				while (($file = readdir($d)) !== false) {
 					if ($file == '.' || $file == '..') { continue; }
-						$relfile = $dir.$file;
+					$relfile = $dir.$file;
 					$absfile = ABSPATH.$relfile;
-					if (is_dir($absfile)) {
-						if (is_link($absfile)) { continue; }
-							$dirs[] = $relfile."/";
+					if (is_dir($absfile) && !is_link($absfile)) {
+						$dirs[] = $relfile."/";
 						$j++;
 					}
-					$stats = @stat($absfile);
-					$fdata = array();
-					if (!$stats)
-						continue;
 					$current++;
 					if ($offset >= $current)
 						continue;
@@ -100,15 +137,7 @@ class BlogVault {
 						$i = $j;
 						break;
 					}
-					foreach(preg_grep('#size|uid|gid|mode|mtime#i', array_keys($stats)) as $key ) {
-						$fdata[$key] = $stats[$key];
-					}
-
-					$fdata["filename"] = $relfile;
-					if (($fdata["mode"] & 0xF000) == 0xA000) {
-						$fdata["link"] = @readlink($absfile);
-					}
-					$bfa[] = $fdata;
+					$bfa[] = $this->fileStat($relfile);
 					$bfc++;
 					if ($bfc == $bsize) {
 						$str = serialize($bfa);
@@ -135,70 +164,46 @@ class BlogVault {
 		return true;
 	}
 
-	function getValidFiles($files)
-	{
-		$outfiles = array();
-		foreach($files as $file) {
-			if (!file_exists($file) || !is_readable($file) ||
-				(!is_file($file) && !is_link($file))) {
-					$this->addArrayToStatus("missingfiles", $file);
-					continue;
-				}
-			$outfiles[] = $file;
+	function calculateMd5($absfile, $fdata, $offset, $limit, $bsize) {
+		if ($offset == 0 && $limit == 0) {
+			$md5 = md5_file($absfile);
+		} else {
+			if ($limit == 0)
+				$limit = $fdata["size"];
+			if ($offset + $limit < $fdata["size"])
+				$limit = $fdata["size"] - $offset;
+			$handle = fopen($absfile, "rb");
+			$ctx = hash_init('md5');
+			fseek($handle, $offset, SEEK_SET);
+			$dlen = 1;
+			while (($limit > 0) && ($dlen > 0)) {
+				if ($bsize > $limit)
+					$bsize = $limit;
+				$d = fread($handle, $bsize);
+				$dlen = strlen($d);
+				hash_update($ctx, $d);
+				$limit -= $dlen;
+			}
+			fclose($handle);
+			$md5 = hash_final($ctx);
 		}
-		return $outfiles;
+		return $md5;
 	}
 
-	function fileStat($file) {
-		$stats = @stat(ABSPATH.$file);
-		$fdata = array();
-		foreach(preg_grep('#size|uid|gid|mode|mtime#i', array_keys($stats)) as $key ) {
-			$fdata[$key] = $stats[$key];
-		}
-
-		$fdata["filename"] = $file;
-		return $fdata;
-	}
-
-	function fileMd5($files, $offset = 0, $limit = 0, $bsize = 102400) {
+	function uploadFilesMd5($files, $offset = 0, $limit = 0, $bsize = 102400) {
 		$clt = new BVHttpClient();
 		if (strlen($clt->errormsg) > 0) {
 			return false;
 		}
 		$clt->uploadChunkedFile($this->getUrl("filesmd5")."&offset=".$offset, "filemd5", "list");
-		$files = $this->getValidFiles($files);
 		foreach($files as $file) {
-			$fdata = array();
 			$fdata = $this->fileStat($file);
-			$_limit = $limit;
-			$_bsize = $bsize;
-			if (!file_exists(ABSPATH.$file)) {
+			$absfile = ABSPATH.$file;
+			if (!is_readable($absfile)) {
 				$this->addArrayToStatus("missingfiles", $file);
 				continue;
 			}
-			if ($offset == 0 && $_limit == 0) {
-				$md5 = md5_file(ABSPATH.$file);
-			} else {
-				if ($_limit == 0)
-					$_limit = $fdata["size"];
-				if ($offset + $_limit < $fdata["size"])
-					$_limit = $fdata["size"] - $offset;
-				$handle = fopen(ABSPATH.$file, "rb");
-				$ctx = hash_init('md5');
-				fseek($handle, $offset, SEEK_SET);
-				$dlen = 1;
-				while (($_limit > 0) && ($dlen > 0)) {
-					if ($_bsize > $_limit)
-						$_bsize = $_limit;
-					$d = fread($handle, $_bsize);
-					$dlen = strlen($d);
-					hash_update($ctx, $d);
-					$_limit -= $dlen;
-				}
-				fclose($handle);
-				$md5 = hash_final($ctx);
-			}
-			$fdata["md5"] = $md5;
+			$fdata["md5"] = $this->calculateMd5($absfile, $fdata, $offset, $limit, $bsize);
 			$sfdata = serialize($fdata);
 			$clt->newChunkedPart(strlen($sfdata).":".$sfdata);
 		}
@@ -211,6 +216,22 @@ class BlogVault {
 		return true;
 	}
 
+	function getFilesStats($files, $offset = 0, $limit = 0, $bsize = 102400) {
+		foreach($files as $file) {
+			$fdata = $this->fileStat($file);
+			$absfile = ABSPATH.$file;
+			if (!is_readable($absfile)) {
+				$this->addArrayToStatus("missingfiles", $file);
+				continue;
+			}
+			if (array_key_exists('md5', $_REQUEST)) {
+				$fdata["md5"] = $this->calculateMd5($absfile, $fdata, $offset, $limit, $bsize);
+			}
+			$this->addArrayToStatus("stats", $fdata);
+		}
+		return true;
+	}
+
 	function uploadFiles($files, $offset = 0, $limit = 0, $bsize = 102400) {
 		$clt = new BVHttpClient();
 		if (strlen($clt->errormsg) > 0) {
@@ -219,7 +240,7 @@ class BlogVault {
 		$clt->uploadChunkedFile($this->getUrl("filedump")."&offset=".$offset, "filedump", "data");
 
 		foreach($files as $file) {
-			if (!file_exists(ABSPATH.$file)) {
+			if (!is_readable(ABSPATH.$file)) {
 				$this->addArrayToStatus("missingfiles", $file);
 				continue;
 			}
@@ -396,11 +417,11 @@ class BlogVault {
 
 	function rowsCount($tbl) {
 		global $wpdb;
-		$count = $wpdb->get_var("SELECT COUNT(*) FROM ".$tbl);
+		$count = $wpdb->get_var("SELECT COUNT(*) FROM $tbl;");
 		return intval($count);
 	}
 
-	function tableInfo($tbl, $offset = 0, $limit = 0, $bsize = 512, $filter = "") {
+	function tableInfo($tbl, $tname, $rcount, $offset = 0, $limit = 0, $bsize = 512, $filter = "") {
 		global $wpdb;
 
 		$data = array();
@@ -408,7 +429,7 @@ class BlogVault {
 		if (strlen($clt->errormsg) > 0) {
 			return false;
 		}
-		$clt->uploadChunkedFile($this->getUrl("tableinfo")."&offset=".$offset, "tablename", $tbl);
+		$clt->uploadChunkedFile($this->getUrl("tableinfo")."&offset=".$offset."&rcount=".$rcount."&tname=".urlencode($tname), "tableinfo", "data");
 		if (array_key_exists('create', $_REQUEST)) {
 			$data["create"] = $this->tableCreate($tbl);
 		}
@@ -445,16 +466,16 @@ class BlogVault {
 		return true;
 	}
 
-	function uploadRows($tbl, $offset = 0, $limit = 0, $bsize = 512, $filter = "") {
+	function uploadRows($tbl, $tname, $rcount, $offset = 0, $limit = 0, $bsize = 512, $filter = "") {
 		global $wpdb;
 		$clt = new BVHttpClient();
 		if (strlen($clt->errormsg) > 0) {
 			return false;
 		}
-		$clt->uploadChunkedFile($this->getUrl("uploadrows")."&offset=".$offset, "tablename", $tbl);
+		$clt->uploadChunkedFile($this->getUrl("uploadrows")."&offset=".$offset."&rcount=".$rcount."&tname=".urlencode($tname), "uploadrows", "data");
 
 		if ($limit == 0) {
-			$limit = $wpdb->get_var("SELECT COUNT(*) FROM ".$tbl);
+			$limit = $wpdb->get_var("SELECT COUNT(*) FROM $tbl");
 		}
 		$srows = 1;
 		while (($limit > 0) && ($srows > 0)) {
@@ -570,10 +591,9 @@ class BlogVault {
 		global $wpdb, $bvVersion;
 		if (array_key_exists('obend', $_REQUEST) && function_exists('ob_end_clean'))
 			@ob_end_clean();
-		if ((array_key_exists('mode', $_REQUEST)) && ($_REQUEST['mode'] === "resp")) {
-			if (array_key_exists('op_reset', $_REQUEST)) {
-				output_reset_rewrite_vars();
-			}
+		if (array_key_exists('op_reset', $_REQUEST) && function_exists('output_reset_rewrite_vars'))
+			output_reset_rewrite_vars();
+		if (array_key_exists('binhead', $_REQUEST)) {
 			header("Content-type: application/binary");
 			header('Content-Transfer-Encoding: binary');
 		}
@@ -618,7 +638,14 @@ class BlogVault {
 			$offset = intval(urldecode($_REQUEST['offset']));
 			$limit = intval(urldecode($_REQUEST['limit']));
 			$bsize = intval(urldecode($_REQUEST['bsize']));
-			$this->addStatus("status", $this->fileMd5($files, $offset, $limit, $bsize));
+			$this->addStatus("status", $this->uploadFilesMd5($files, $offset, $limit, $bsize));
+			break;
+		case "getfilesstats":
+			$files = $_REQUEST['files'];
+			$offset = intval(urldecode($_REQUEST['offset']));
+			$limit = intval(urldecode($_REQUEST['limit']));
+			$bsize = intval(urldecode($_REQUEST['bsize']));
+			$this->addStatus("status", $this->getFilesStats($files, $offset, $limit, $bsize));
 			break;
 		case "listtables":
 			$this->addStatus("status", $this->listTables());
@@ -629,7 +656,9 @@ class BlogVault {
 			$limit = intval(urldecode($_REQUEST['limit']));
 			$bsize = intval(urldecode($_REQUEST['bsize']));
 			$filter = urldecode($_REQUEST['filter']);
-			$this->addStatus("status", $this->tableInfo($table, $offset, $limit, $bsize, $filter));
+			$rcount = intval(urldecode($_REQUEST['rcount']));
+			$tname = urldecode($_REQUEST['tname']);
+			$this->addStatus("status", $this->tableInfo($table, $tname, $rcount, $offset, $limit, $bsize, $filter));
 			break;
 		case "uploadrows":
 			$table = urldecode($_REQUEST['table']);
@@ -637,7 +666,9 @@ class BlogVault {
 			$limit = intval(urldecode($_REQUEST['limit']));
 			$bsize = intval(urldecode($_REQUEST['bsize']));
 			$filter = urldecode($_REQUEST['filter']);
-			$this->addStatus("status", $this->uploadRows($table, $offset, $limit, $bsize, $filter));
+			$rcount = intval(urldecode($_REQUEST['rcount']));
+			$tname = urldecode($_REQUEST['tname']);
+			$this->addStatus("status", $this->uploadRows($table, $tname, $rcount, $offset, $limit, $bsize, $filter));
 			break;
 		case "sendactivate":
 			$this->addStatus("status", $this->activate());
@@ -726,6 +757,7 @@ class BlogVault {
 					'uploadpath' => $this->uploadPath(),
 					'uploaddir' => wp_upload_dir(),
 					'contentdir' => defined('WP_CONTENT_DIR') ? WP_CONTENT_DIR : null,
+					'contenturl' => defined('WP_CONTENT_URL') ? WP_CONTENT_URL : null,
 					'plugindir' => defined('WP_PLUGIN_DIR') ? WP_PLUGIN_DIR : null,
 					'dbcharset' => defined('DB_CHARSET') ? DB_CHARSET : null,
 					'disallow_file_edit' => defined('DISALLOW_FILE_EDIT'),
@@ -833,12 +865,12 @@ class BlogVault {
 			$this->tableKeys($table);
 			break;
 		case "gettablecreate":
-			$tname = $_REQUEST['table'];
-			$this->addStatus("create", $this->tableCreate($tname));
+			$table = urldecode($_REQUEST['table']);
+			$this->addStatus("create", $this->tableCreate($table));
 			break;
 		case "getrowscount":
-			$tname = $_REQUEST['table'];
-			$this->addStatus("count", $this->rowsCount($tname));
+			$table = urldecode($_REQUEST['table']);
+			$this->addStatus("count", $this->rowsCount($table));
 			break;
 		case "updatedailyping":
 			$value = $_REQUEST['value'];

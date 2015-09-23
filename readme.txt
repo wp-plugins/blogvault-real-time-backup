@@ -4,7 +4,7 @@ Contributors: Backup by blogVault, akshatc, singhsivam
 Tags: backup, wordpress backup, database backup, complete backup, wp backup, website backup, blogvault, real-time backup, dropbox backup, files backup, wp backup, backup plugin
 Donate link: http://blogvault.net
 Requires at least: 1.5
-Tested up to: 4.3
+Tested up to: 4.3.1
 Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -222,6 +222,11 @@ Real-time Backup refers to the backup of your WordPress content by saving every 
 1. Backup of all your WordPress sites managed from one location
 
 == Changelog ==
+= 1.20 =
+* Adding DB Signature and Server Signature to uniquely identify a site
+* Adding the stats api to the WordPress Backup plugin.
+* Sending tablename/rcount as part of the callback
+
 = 1.17 =
 * Add support for repair table so that the backup plugin itself can be used to repair tables without needing PHPMyAdmin access
 * Making the plugin to be available network wide.

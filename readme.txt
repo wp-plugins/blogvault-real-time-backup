@@ -136,45 +136,45 @@ Yes. We have different backup plans for different needs. We will let you manage 
 
 Additional licenses for backups are available at a lower price. Please visit our [Plans and Pricing page](http://blogvault.net/pricing/?bvsrc=backup-plugin-readme) for all the details.
 
-= Do you have any Unlimited Backup plans =
+= Do you have any Unlimited Backup plans? =
 Yes. We have 3 great developer plans which let you backup as many sites as you like without worrying about licenses. You can learn more about these backup plans at [Unlimited WordPress Backup Plans](http://blogvault.net/unlimited-plans/?bvsrc=backup-plugin-readme)
 
 = Can I change my backup plan? =
 Yes, you can change your backup plan at anytime right from the blogVault dashboard.
 
-= How do I update the blogVault Backup Plugin =
+= How do I update the blogVault Backup Plugin? =
 You can update the blogVault Backup Plugin from within the WordPress Admin Panel itself. We have published the backup plugin in the WordPress Repository. We regularly update our backup plugin. Alternatively you can update the plugin from the blogVault Dashboard too.
 
-= How do I start using the blogVault backup plugin?
+= How do I start using the blogVault backup plugin? =
 You need to first install and activate the backup plugin just like other WordPress plugins. Once completed, you must register yourself with blogVault. The backup starts immediately after this step. You can also track the progress of your backup from the blogVault dashboard. The first backup may take a little longer, depending on the size of your site. However, further backups are done in a jiffy owing to our incremental backup approach.
 
-= How do I perform an auto restore of my backup?
+= How do I perform an auto restore of my backup? =
 The blogVault backup plugin automatically restores your site from a backup within a few minutes. You have the option of choosing any backup version in the last 30 days. To start an auto restore, simply click on the Auto-Restore link on the blogVault dashboard and following the steps below -
 * Enter the FTP details of the server where the backup needs to be restored.
 * Select the folder within your server where the backup files need to be transferred. This is the same as the 'root' folder from where your site will be served.
 * Lastly, enter the database details of your WordPress install. The blogVault backup plugin will restore your database from the chosen backup version.
 Once completed, you backup is restored completely to your site.
 
-= Is there a way to validate my backup?
+= Is there a way to validate my backup? =
 There is a very easy way to validate your backup - Test Restore. The Test Restore feature restores a backup temporarily on our test servers. The site that is created is a replica of the original one.
 
-= Does blogVault support migration?
+= Does blogVault support migration? =
 blogVault can help you move your site seamlessly between hosts or domains. The latest backup is used to do this and the steps are similar to that of Auto Restore. You must first setup the new location for migration by creating the domain and installing WordPress.To begin migration, simply click on the Migrate-Site link on the blogVault dashboard and following the steps below -
 * Enter the FTP details of the new server where the backup needs to be restored.
 * Select the folder within your server where the backup files need to be transferred. This is the same as the 'root' folder from where your site will be served.
 * Lastly, enter the database details of your new WordPress install. The blogVault backup plugin will restore your database from the chosen backup version.
 Once completed, your site is migrated to the new location using the latest backup version. You can update the DNS record to point to the new location whenever you are ready to go live with the new site.
 
-= My site underwent a significant upgrade and the automatic backup is scheduled after 5 hours. Can I initiate a backup manually?
+= My site underwent a significant upgrade and the automatic backup is scheduled after 5 hours. Can I initiate a backup manually? =
 Definitely. blogVault supports on demand backup that lets you initiate backups whenever you want. Just click on the Backup Now link from the blogVault dashboard and your backup will be done right away.
 
-= Can I change the schedule for the automatic backup?
+= Can I change the schedule for the automatic backup? =
 Yes, you can pick any convenient time of the day for when the automatic backup should take place.
 
-= I am about to upgrade my site and the next schedule backup is due in an hour. Can I put it off until my upgrade is completed?
+= I am about to upgrade my site and the next schedule backup is due in an hour. Can I put it off until my upgrade is completed? =
 You can use our Pause Backup feature to temporarily suspend the backup schedule. Once you are ready to continue, click on Resume Backup.
 
-= Can I backup a local site using blogVault?
+= Can I backup a local site using blogVault? =
 Local sites are commonly used as a development setup by designers while creating or modifying sites for their clients. This activity can span over many weeks and involves considerable effort. Hence it is crucial to take regular backups as a single crash could translate to days/ weeks of wasted effort. However, blogVault only supports backup for publicly accessible sites. But there is a simple workaround to this problem. You need to first use a tool that makes your site available outside of your local network. From then on, you can use blogVault to backup your site just like any other.
  
 Ngrok is one such service that helps you make this transition for your site. It provides a URL to your site that you can use just as any regular site during backup. Any request to view the URL will first reach ngrok's public servers from where it is redirected to your local network.
@@ -185,36 +185,36 @@ You can now start backup of your local site using blogVault with this URL. In ca
 
 blogVault can perform automatic backups only when your system is online. So it is preferable to schedule backups during this time. However, blogVault also supports the Backup Now feature using which you can initiate a backup anytime you want.
 
-= Can I download a specific file using blogVault?
+= Can I download a specific file using blogVault? =
 With blogVault, you can view the difference between a newer and older version of your stylesheet or configuration file without downloading the entire backup? A backup file spans many MBs/ GBs depending on your site and takes time to download. This can especially be a bit of a bother if you want to go through multiple versions of a specific file and have to download the full backup file every time.
 blogVault has an easy way around to the problem. With blogVault, you download any chosen version of a specific file in a given backup and view its contents. You can also view the delta between two versions of a file using this method.
 
-= How do I upload a backup to my Dropbox account?
+= How do I upload a backup to my Dropbox account? =
 Dropbox provides a simple mechanism for users to backup important files and share it with others. These files are accessible from anywhere, anytime. You don't need to bother carrying a flash drive anymore. Now wouldn't it be good to have a backup of your sites on Dropbox too? 
 Manually downloading a backup and then uploading it to your Dropbox takes time. Moreover, you may already have a registered with blogVault backup plugin. All WordPress backup services have a limit on the number of backup versions they maintain. blogVault stores up to 30 versions of your backup in its repository. What if there is a 'gold' version of your site that you want to store as a permanent backup? It could be a complex plugin that you installed or a new theme that got deployed.
 blogVault includes the Upload to Dropbox feature using which you can directly upload any version of your backup to your Dropbox account. The complete backup is stored to the Apps folder of your account.
 
-= How do I download the latest backup using blogVault?
+= How do I download the latest backup using blogVault? =
 When it comes to restoring your site, you must have your entire site content ready in one place, preferably in a compressed format. If you are using a good WordPress backup service like blogVault, a ready-made download solution is available to you. The Download Backup feature provides you with the option of downloading any one of the last 30 backups from blogVault's repository. Once downloaded, you can proceed with unzipping the contents of your backup. You will find that it includes all the WordPress files along with a bvfulldump.sql which is nothing but a dump of your site's database.
 
-= How does blogVault secure my backup?
+= How does blogVault secure my backup? =
 Data security is one of the top concerns in the world today. With a rise in the number of systems being automated and information stored electronically, the vulnerabilities are also ever increasing. We at blogVault understand the value of your data and have taken every possible measure to ensure that it is 100% safe and secure.
 We store two copies of your backup in our data center located in Germany. The data center houses servers that are highly robust and secure. Apart from our data center, we also maintain multiple backups on Amazon S3 servers. We create as many as 7 copies of your data using our S3 account. This means we have 9 copies of every backup. Together with local and cloud storage, we have 9 copies of every backup version. You have the choice of downloading any version of your backup in the last 30 days, at any point of time. What if there is a gold version that you want to copy to your own storage, such as Dropbox?  We allow that too by providing an Upload to Dropbox option for every backup version in our history.
 Most importantly, blogVault ensures highest protection for your data because the backup is stored independently from that of the actual data. This is a classic case of separating the church from the state so that each can fulfil its own purpose. By maintain your backup in servers that are different from where your actual data resides, we ensure that your backup is always at your disposal in the face of any site failures.  Lastly, we also provide you with an option to upload any particular version of your backup to your Dropbox. Apart from achieving high reliability, we also ensure that the integrity of your data is not compromised at any point by encrypting all your data as part of our backing up process. 
 
-= How does blogVault scale for larges sites, both for backup and restore?
+= How does blogVault scale for larges sites, both for backup and restore? =
 If your WordPress site spans many GBs in size, you would definitely need to have a backup solution in place to safeguard your data. But does your backup provider scale up to such large sites? Most free and paid WordPress backup plugins fail while backing up large sites. The backup plugins usually create a Zip file of the entire site while creating backups. In case of large sites, the plugin will either timeout while creating the backup file or put excessive strain on the server. Copying such large backup files to remote locations like S3 or Dropbox takes a lot of time. Furthermore, repeating the process to archive 30 days of backup would mean considerable amount of time and cost. Some backup plugins store backup files on the server temporarily before moving them to other locations, taking up a lot of disk space on the server.
 The blogVault backup plugin doesn't run into any of the above problems while working with large sites. It achieves this by breaking the site into small chunks and performs a backup only for those parts that have changed since the last backup, also known as incremental backup.
 A backup is only as good as a restore and restoring large sites can pose its own problems, similar to backup. Uploading large backup files can take up a long time, or worse timeout. Unzipping a large backup file may eventually timeout and fail. Importing large databases may result in a timeout.
 The blogVault backup plugin solves the above problems using the Auto-Restore feature. When your site goes down, it adopts an incremental restore that will get you back up on your feet quickly. Similar to the backup mechanism, it only works with small chunks and only restores the parts of the site that have changed.
 
-= Are there any parts of my site that blogVault doesn't backup?
+= Are there any parts of my site that blogVault doesn't backup? =
 Many WordPress backup plugins support an exclude list wherein you can specify the folders that you want to eliminate during backup. This can include backup folders created by other plugins, uploads folder, log files, or anything else that you don't want to bother backing up. The blogVault plugin too has its own way of achieving an effective way of backing up a WordPress site. By default, it takes a backup of all the standard WordPress folders and skips the rest. However, if there is a special non-WordPress folder that you'd like to include during backup, there is way to do that too. When blogVault schedules daily backup for your site, the folders that are skipped are listed on the dashboard and marked in red. If you want blogVault to include any of the skipped file(s)/ folder(s) as part of the backup schedule, check the appropriate name and click Add to Backup. Once this is done, you can either wait for blogVault to include the skipped content in the next scheduled backup, or initiate a backup immediately using Backup Now.
 
-= Does blogVault support real-time backup?
+= Does blogVault support real-time backup? =
 Yes, blogVault supports real-time backup. Regular backups are scheduled every 24 hours. However, for sites that undergo constant updates, this wont suffice. blogVault's real-time backup will backup every update to the site instantly.
 
-= Do I need to opt for real-time backup?
+= Do I need to opt for real-time backup? =
 Real-time Backup refers to the backup of your WordPress content by saving every change made to your site instantly. For most regular WordPress blogs and sites, daily automatic backup is sufficient to keep your data protected. But there are other sites, like ecommerce stores and new sites, which are constantly updated throughout the day. In such cases, periodic backups alone will not do. If you own an ecommerce store, think of the number of orders that are placed every hour. Even if you have hourly backups in place, a site outage between two scheduled backups will still result in data loss. And for an online store, losing orders will definitely burn a hole in your pocket and damage your reputation. So if you own a WordPress site that fits into this category, you must register with a real-time backup plugin like blogVault where every change is backed up immediately.
 
 == Screenshots ==
